@@ -2,83 +2,76 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
-import session from "express-session";
-import { RedisStore } from "connect-redis";
-import { createClient } from "redis";
+import jwt from "jsonwebtoken";
 import path from "path";
+import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
+
+// Extend Express Request interface
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
-// Redis client setup with fallback
-let redisClient: any = null;
-let redisStore: any = null;
-
-try {
-  redisClient = createClient({
-    url: process.env.REDIS_URL || "redis://localhost:6379",
-  });
-
-  redisClient.on("error", () => {});
-
-  redisClient.connect().catch(() => {
-    redisClient = null;
-  });
-
-  redisStore = new RedisStore({
-    client: redisClient,
-    prefix: "dashboard:",
-  });
-} catch (error) {
-  redisClient = null;
-  redisStore = null;
-}
-
 app.use(
   cors({
     origin: process.env.BASE_URL || "http://localhost:3000",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Cookie",
+    ],
+    exposedHeaders: ["Set-Cookie"],
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
-app.use(express.static(path.join(process.cwd(), "dist")));
+app.use(express.static(path.join(__dirname, "../../dist")));
 
-const sessionConfig = {
-  store: redisStore || undefined,
-  secret: process.env.JWT_SECRET || "fallback-secret",
-  resave: true,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
-      | "none"
-      | "lax",
-    domain: process.env.NODE_ENV === "production" ? undefined : undefined,
-  },
-  name: "dashboard_session",
-};
+const requireAuth = (req: any, res: any, next: any): void => {
+  console.log("🔒 RequireAuth middleware");
 
-app.use(session(sessionConfig));
+  const token =
+    req.cookies.token || req.headers.authorization?.replace("Bearer ", "");
 
-// Middleware d'authentification pour les routes API
-const requireAuth = (req: any, res: any, next: any) => {
-  const user = (req.session as any).user;
-
-  if (!user) {
-    return res.status(401).json({ error: "Authentication required" });
+  if (!token) {
+    console.log("❌ No token found");
+    res.status(401).json({ error: "Authentication required" });
+    return;
   }
 
-  next();
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "fallback-secret"
+    ) as any;
+    req.user = decoded;
+    console.log("✅ User authenticated:", decoded.username);
+    next();
+  } catch (error) {
+    console.log("❌ Invalid token");
+    res.status(401).json({ error: "Invalid token" });
+  }
 };
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  return res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 app.get("/api/stats", requireAuth, async (_req, res) => {
@@ -120,7 +113,7 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
 
     const recentMatches = await prisma.match.findMany({
       orderBy: { beginAt: "desc" },
-      take: 5,
+      take: 6,
     });
 
     const mostUsedCommand = await prisma.commandStat.groupBy({
@@ -160,7 +153,7 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
       where: { status: "RESOLVED" },
     });
 
-    res.json({
+    return res.json({
       totalServers,
       totalMatches,
       totalMembers,
@@ -198,8 +191,7 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching stats:", error);
-    res.status(500).json({ error: "Failed to fetch stats" });
+    return res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
 
@@ -208,10 +200,9 @@ app.get("/api/servers", requireAuth, async (_req, res) => {
     const servers = await prisma.guildSettings.findMany({
       orderBy: { joinedAt: "desc" },
     });
-    res.json(servers);
+    return res.json(servers);
   } catch (error) {
-    console.error("Error fetching servers:", error);
-    res.status(500).json({ error: "Failed to fetch servers" });
+    return res.status(500).json({ error: "Failed to fetch servers" });
   }
 });
 
@@ -235,15 +226,14 @@ app.get("/api/matches", requireAuth, async (req, res) => {
       prisma.match.count({ where }),
     ]);
 
-    res.json({
+    return res.json({
       matches,
       total,
       page,
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Error fetching matches:", error);
-    res.status(500).json({ error: "Failed to fetch matches" });
+    return res.status(500).json({ error: "Failed to fetch matches" });
   }
 });
 
@@ -266,15 +256,14 @@ app.get("/api/command-stats", requireAuth, async (req, res) => {
       prisma.commandStat.count({ where }),
     ]);
 
-    res.json({
+    return res.json({
       commands,
       total,
       page,
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Error fetching command stats:", error);
-    res.status(500).json({ error: "Failed to fetch command stats" });
+    return res.status(500).json({ error: "Failed to fetch command stats" });
   }
 });
 
@@ -298,15 +287,14 @@ app.get("/api/tickets", requireAuth, async (req, res) => {
       prisma.ticket.count({ where }),
     ]);
 
-    res.json({
+    return res.json({
       tickets,
       total,
       page,
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Error fetching tickets:", error);
-    res.status(500).json({ error: "Failed to fetch tickets" });
+    return res.status(500).json({ error: "Failed to fetch tickets" });
   }
 });
 
@@ -315,10 +303,9 @@ app.get("/api/team-popularity", requireAuth, async (_req, res) => {
     const teamPopularity = await prisma.teamPopularity.findMany({
       orderBy: { usageCount: "desc" },
     });
-    res.json(teamPopularity);
+    return res.json(teamPopularity);
   } catch (error) {
-    console.error("Error fetching team popularity:", error);
-    res.status(500).json({ error: "Failed to fetch team popularity" });
+    return res.status(500).json({ error: "Failed to fetch team popularity" });
   }
 });
 
@@ -343,7 +330,7 @@ app.get("/api/performance-metrics", requireAuth, async (req, res) => {
       where: { ...where, success: true },
     });
 
-    res.json({
+    return res.json({
       metrics,
       summary: {
         averageResponseTime:
@@ -356,15 +343,304 @@ app.get("/api/performance-metrics", requireAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching performance metrics:", error);
-    res.status(500).json({ error: "Failed to fetch performance metrics" });
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch performance metrics" });
   }
 });
 
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(process.cwd(), "dist/index.html"));
+app.post("/api/auth/callback", async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: "Authorization code is required" });
+    }
+
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+    const redirectUri = process.env.DISCORD_REDIRECT_URI;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      return res.status(500).json({ error: "Server configuration error" });
+    }
+
+    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: "authorization_code",
+        code: code,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      return res
+        .status(400)
+        .json({ error: "Failed to authenticate with Discord" });
+    }
+
+    const tokenData = (await tokenResponse.json()) as any;
+
+    const userResponse = await fetch("https://discord.com/api/users/@me", {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    if (!userResponse.ok) {
+      return res
+        .status(400)
+        .json({ error: "Failed to fetch user information" });
+    }
+
+    const userData = (await userResponse.json()) as any;
+
+    const authorizedUserIds =
+      process.env.AUTHORIZED_USER_IDS?.split(",").map((id) => id.trim()) || [];
+
+    if (
+      authorizedUserIds.length > 0 &&
+      !authorizedUserIds.includes(userData.id)
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. User not authorized." });
+    }
+
+    const token = jwt.sign(
+      {
+        id: userData.id,
+        username: userData.username,
+        avatar: userData.avatar,
+      },
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "24h" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
+    });
+
+    return res.json({
+      success: true,
+      user: {
+        id: userData.id,
+        username: userData.username,
+        avatar: userData.avatar,
+      },
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Authentication failed" });
+  }
+});
+
+app.get("/auth/callback", async (req, res) => {
+  console.log("🔐 Auth callback started");
+
+  try {
+    const { code, error } = req.query;
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+
+    console.log("🔐 Query params:", { code: !!code, error });
+
+    if (error) {
+      console.log("❌ Auth error:", error);
+      return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
+    }
+
+    if (!code) {
+      console.log("❌ No authorization code");
+      return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
+    }
+
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+    const redirectUri = process.env.DISCORD_REDIRECT_URI;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      return res.redirect(`${baseUrl}/auth/callback?error=config_error`);
+    }
+
+    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: "authorization_code",
+        code: code as string,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      return res.redirect(
+        `${baseUrl}/auth/callback?error=token_exchange_failed`
+      );
+    }
+
+    const tokenData = (await tokenResponse.json()) as any;
+
+    const userResponse = await fetch("https://discord.com/api/users/@me", {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    if (!userResponse.ok) {
+      return res.redirect(`${baseUrl}/auth/callback?error=user_fetch_failed`);
+    }
+
+    const userData = (await userResponse.json()) as any;
+
+    const authorizedUserIds =
+      process.env.AUTHORIZED_USER_IDS?.split(",").map((id) => id.trim()) || [];
+
+    if (
+      authorizedUserIds.length > 0 &&
+      !authorizedUserIds.includes(userData.id)
+    ) {
+      return res.redirect(`${baseUrl}/auth/callback?error=unauthorized`);
+    }
+
+    console.log("✅ User authenticated:", {
+      id: userData.id,
+      username: userData.username,
+    });
+
+    const token = jwt.sign(
+      {
+        id: userData.id,
+        username: userData.username,
+        avatar: userData.avatar,
+      },
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "24h" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
+    });
+
+    console.log("🔄 Redirecting to:", `${baseUrl}/`);
+    return res.redirect(`${baseUrl}/`);
+  } catch (error) {
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    return res.redirect(`${baseUrl}/auth/callback?error=auth_failed`);
+  }
+});
+
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  console.log("🔍 Auth/me request");
+  console.log("🔍 User:", req.user);
+
+  try {
+    return res.json(req.user);
+  } catch (error) {
+    console.error("❌ Auth/me error:", error);
+    return res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+app.post("/api/auth/logout", requireAuth, (_req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
+    });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to logout" });
+  }
+});
+
+app.post("/api/auth/clear-session", (_req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
+    });
+    res.json({ success: true, message: "Session cleared" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to clear session" });
+  }
+});
+
+app.get("/api/tickets/:ticketId", requireAuth, async (req, res) => {
+  try {
+    const ticketId = req.params.ticketId;
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    return res.json(ticket);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch ticket" });
+  }
+});
+
+app.patch("/api/tickets/:ticketId/status", requireAuth, async (req, res) => {
+  try {
+    const ticketId = req.params.ticketId;
+    const { status } = req.body;
+
+    const ticket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status },
+    });
+
+    return res.json(ticket);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update ticket status" });
+  }
+});
+
+app.post("/api/tickets/:ticketId/respond", requireAuth, async (_req, res) => {
+  try {
+    return res.json({ success: true, message: "Response added successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to add ticket response" });
+  }
+});
+
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  return res.sendFile(path.join(__dirname, "../../dist/index.html"));
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("🚀 Server started on port", PORT);
+  console.log("🌍 Environment:", process.env.NODE_ENV || "development");
+  console.log("🔧 Base URL:", process.env.BASE_URL || "http://localhost:3000");
 });
