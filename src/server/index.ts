@@ -24,21 +24,50 @@ let redisClient: any = null;
 let redisStore: any = null;
 
 try {
+  console.log("🔧 Initializing Redis client...");
+  console.log(
+    "🔧 Redis URL:",
+    process.env.REDIS_URL || "redis://localhost:6379"
+  );
+
   redisClient = createClient({
     url: process.env.REDIS_URL || "redis://localhost:6379",
   });
 
-  redisClient.on("error", () => {});
-
-  redisClient.connect().catch(() => {
-    redisClient = null;
+  redisClient.on("error", (err: any) => {
+    console.error("❌ Redis error:", err);
   });
+
+  redisClient.on("connect", () => {
+    console.log("✅ Redis connected successfully");
+  });
+
+  redisClient.on("ready", () => {
+    console.log("✅ Redis ready");
+  });
+
+  redisClient.on("end", () => {
+    console.log("🔌 Redis connection ended");
+  });
+
+  redisClient
+    .connect()
+    .then(() => {
+      console.log("✅ Redis connection established");
+    })
+    .catch((err: any) => {
+      console.error("❌ Redis connection failed:", err);
+      redisClient = null;
+    });
 
   redisStore = new RedisStore({
     client: redisClient,
     prefix: "dashboard:",
   });
+
+  console.log("✅ Redis store initialized");
 } catch (error) {
+  console.error("❌ Redis setup failed:", error);
   redisClient = null;
   redisStore = null;
 }
@@ -79,15 +108,31 @@ const sessionConfig = {
   name: "dashboard_session",
 };
 
+console.log("🔧 Session config:", {
+  store: redisStore ? "Redis" : "Memory",
+  secret: process.env.JWT_SECRET ? "Set" : "Fallback",
+  resave: sessionConfig.resave,
+  saveUninitialized: sessionConfig.saveUninitialized,
+  cookie: sessionConfig.cookie,
+  nodeEnv: process.env.NODE_ENV,
+});
+
 app.use(session(sessionConfig));
 
 const requireAuth = (req: any, res: any, next: any) => {
+  console.log("🔒 RequireAuth middleware");
+  console.log("🔒 Session ID:", req.sessionID);
+  console.log("🔒 Session exists:", !!req.session);
+  console.log("🔒 User in session:", (req.session as any).user);
+
   const user = (req.session as any).user;
 
   if (!user) {
+    console.log("❌ No user found in session");
     return res.status(401).json({ error: "Authentication required" });
   }
 
+  console.log("✅ User authenticated:", user.username);
   next();
 };
 app.get("/api/health", (_req, res) => {
@@ -112,6 +157,9 @@ app.get("/api/debug/session", (req, res) => {
 });
 
 app.get("/api/debug/test-session", (req, res) => {
+  console.log("🧪 Test session request");
+  console.log("🧪 Session ID:", req.sessionID);
+
   (req.session as any).testData = {
     timestamp: new Date().toISOString(),
     random: Math.random(),
@@ -119,12 +167,14 @@ app.get("/api/debug/test-session", (req, res) => {
 
   req.session.save((err) => {
     if (err) {
+      console.error("❌ Test session save failed:", err);
       return res.json({
         error: "Failed to save session",
         details: err.message,
       });
     }
 
+    console.log("✅ Test session saved successfully");
     return res.json({
       success: true,
       testData: (req.session as any).testData,
@@ -133,6 +183,43 @@ app.get("/api/debug/test-session", (req, res) => {
       sessionCookie: req.cookies?.dashboard_session,
     });
   });
+});
+
+app.get("/api/debug/redis", async (req, res) => {
+  console.log("🔍 Redis debug request");
+
+  try {
+    if (!redisClient) {
+      console.log("❌ Redis client not available");
+      return res.json({
+        available: false,
+        error: "Redis client not initialized",
+      });
+    }
+
+    console.log("🔍 Testing Redis connection...");
+    const testKey = "test:connection";
+    const testValue = new Date().toISOString();
+
+    await redisClient.set(testKey, testValue);
+    const retrievedValue = await redisClient.get(testKey);
+    await redisClient.del(testKey);
+
+    console.log("✅ Redis test successful");
+    return res.json({
+      available: true,
+      test: "successful",
+      setValue: testValue,
+      retrievedValue: retrievedValue,
+      match: testValue === retrievedValue,
+    });
+  } catch (error) {
+    console.error("❌ Redis test failed:", error);
+    return res.json({
+      available: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 });
 
 app.get("/api/stats", requireAuth, async (_req, res) => {
@@ -505,15 +592,28 @@ app.post("/api/auth/callback", async (req, res) => {
 });
 
 app.get("/auth/callback", async (req, res) => {
+  console.log("🔐 Auth callback started");
+  console.log("🔐 Session ID:", req.sessionID);
+  console.log("🔐 Cookies:", req.cookies);
+  console.log("🔐 Headers:", {
+    origin: req.headers.origin,
+    referer: req.headers.referer,
+    cookie: req.headers.cookie,
+  });
+
   try {
     const { code, error } = req.query;
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
+    console.log("🔐 Query params:", { code: !!code, error });
+
     if (error) {
+      console.log("❌ Auth error:", error);
       return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
     }
 
     if (!code) {
+      console.log("❌ No authorization code");
       return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
     }
 
@@ -569,24 +669,42 @@ app.get("/auth/callback", async (req, res) => {
       return res.redirect(`${baseUrl}/auth/callback?error=unauthorized`);
     }
 
+    console.log("✅ User authenticated:", {
+      id: userData.id,
+      username: userData.username,
+    });
+
     (req.session as any).user = {
       id: userData.id,
       username: userData.username,
       avatar: userData.avatar,
     };
 
+    console.log("🔐 Session before save:", {
+      sessionID: req.sessionID,
+      hasUser: !!(req.session as any).user,
+      user: (req.session as any).user,
+    });
+
     // Force session save and wait for completion
     await new Promise<void>((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
+          console.error("❌ Session save failed:", err);
           reject(err);
         } else {
+          console.log("✅ Session saved successfully");
+          console.log("🔐 Session after save:", {
+            sessionID: req.sessionID,
+            hasUser: !!(req.session as any).user,
+          });
           resolve();
         }
       });
     });
 
     if (process.env.NODE_ENV === "production") {
+      console.log("🔧 Setting production cookie");
       res.cookie("dashboard_session", req.sessionID, {
         secure: true,
         httpOnly: true,
@@ -594,8 +712,10 @@ app.get("/auth/callback", async (req, res) => {
         domain: ".cryser.fr",
         maxAge: 24 * 60 * 60 * 1000,
       });
+      console.log("✅ Production cookie set");
     }
 
+    console.log("🔄 Redirecting to:", `${baseUrl}/`);
     return res.redirect(`${baseUrl}/`);
   } catch (error) {
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -604,10 +724,18 @@ app.get("/auth/callback", async (req, res) => {
 });
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
+  console.log("🔍 Auth/me request");
+  console.log("🔍 Session ID:", req.sessionID);
+  console.log("🔍 Cookies:", req.cookies);
+  console.log("🔍 Session exists:", !!req.session);
+  console.log("🔍 Session keys:", req.session ? Object.keys(req.session) : []);
+  console.log("🔍 User in session:", (req.session as any).user);
+
   try {
     const user = (req.session as any).user;
 
     if (!user) {
+      console.log("❌ No user in session");
       return res.status(401).json({
         error: "Not authenticated",
         debug: {
@@ -619,8 +747,10 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
       });
     }
 
+    console.log("✅ User found:", user);
     return res.json(user);
   } catch (error) {
+    console.error("❌ Auth/me error:", error);
     return res.status(500).json({ error: "Failed to fetch user" });
   }
 });
@@ -688,5 +818,9 @@ app.get("*", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  // Server started
+  console.log("🚀 Server started on port", PORT);
+  console.log("🌍 Environment:", process.env.NODE_ENV || "development");
+  console.log("🔧 Base URL:", process.env.BASE_URL || "http://localhost:3000");
+  console.log("🔧 Redis available:", !!redisClient);
+  console.log("🔧 Session store:", redisStore ? "Redis" : "Memory");
 });
