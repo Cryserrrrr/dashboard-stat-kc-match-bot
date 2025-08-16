@@ -538,7 +538,7 @@ app.get("/api/auth/me", (req, res) => {
 
 app.post("/api/auth/logout", (req, res) => {
   try {
-    req.session.destroy((err) => {
+    return req.session.destroy((err) => {
       if (err) {
         console.error("Error destroying session:", err);
         return res.status(500).json({ error: "Failed to logout" });
