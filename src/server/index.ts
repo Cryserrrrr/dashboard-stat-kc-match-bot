@@ -120,7 +120,7 @@ console.log("🔧 Session config:", {
 
 app.use(session(sessionConfig));
 
-const requireAuth = (req: any, res: any, next: any) => {
+const requireAuth = (req: any, res: any, next: any): void => {
   console.log("🔒 RequireAuth middleware");
   console.log("🔒 Session ID:", req.sessionID);
   console.log("🔒 Session exists:", !!req.session);
@@ -130,7 +130,8 @@ const requireAuth = (req: any, res: any, next: any) => {
 
   if (!user) {
     console.log("❌ No user found in session");
-    return res.status(401).json({ error: "Authentication required" });
+    res.status(401).json({ error: "Authentication required" });
+    return;
   }
 
   console.log("✅ User authenticated:", user.username);
@@ -777,7 +778,6 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
       }
       return res.json({ success: true });
     });
-    return;
   } catch (error) {
     return res.status(500).json({ error: "Failed to logout" });
   }
