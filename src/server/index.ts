@@ -8,6 +8,7 @@ import { createClient } from "redis";
 import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -47,17 +48,24 @@ app.use(
     origin: process.env.BASE_URL || "http://localhost:3000",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Cookie",
+    ],
+    exposedHeaders: ["Set-Cookie"],
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(express.static(path.join(__dirname, "../../dist")));
 
 const sessionConfig = {
   store: redisStore || undefined,
   secret: process.env.JWT_SECRET || "fallback-secret",
-  resave: false,
+  resave: true,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === "production",
@@ -65,9 +73,8 @@ const sessionConfig = {
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
       | "none"
-      | "lax"
-      | "strict",
-    domain: process.env.NODE_ENV === "production" ? undefined : undefined,
+      | "lax",
+    domain: process.env.NODE_ENV === "production" ? ".cryser.fr" : undefined,
   },
   name: "dashboard_session",
 };
@@ -99,6 +106,8 @@ app.get("/api/debug/session", (req, res) => {
     cookies: req.headers.cookie,
     origin: req.headers.origin,
     referer: req.headers.referer,
+    sessionCookie: req.cookies?.dashboard_session,
+    allCookies: req.cookies,
   });
 });
 
@@ -120,6 +129,8 @@ app.get("/api/debug/test-session", (req, res) => {
       success: true,
       testData: (req.session as any).testData,
       sessionID: req.sessionID,
+      cookies: req.cookies,
+      sessionCookie: req.cookies?.dashboard_session,
     });
   });
 });
@@ -575,6 +586,16 @@ app.get("/auth/callback", async (req, res) => {
       });
     });
 
+    if (process.env.NODE_ENV === "production") {
+      res.cookie("dashboard_session", req.sessionID, {
+        secure: true,
+        httpOnly: true,
+        sameSite: "none",
+        domain: ".cryser.fr",
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+    }
+
     return res.redirect(`${baseUrl}/`);
   } catch (error) {
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -587,7 +608,15 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
     const user = (req.session as any).user;
 
     if (!user) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({
+        error: "Not authenticated",
+        debug: {
+          sessionID: req.sessionID,
+          hasSession: !!req.session,
+          sessionKeys: req.session ? Object.keys(req.session) : [],
+          cookies: req.cookies,
+        },
+      });
     }
 
     return res.json(user);
