@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Match {
+  id              String   @id // PandaScore ID
+  kcTeam          String   // KC team name (KC, KCB, KCBS, etc.)
+  kcId            String   // KC team ID
+  opponent        String   // Opponent team name
+  opponentImage   String?  // Opponent team image URL
+  leagueName      String   // League name
+  leagueImage     String?  // League image URL
+  serieName       String   // Serie name
+  tournamentName  String   // Tournament name
+  tournamentId    String?  // Tournament ID from PandaScore
+  hasBracket      Boolean  @default(false)
+  numberOfGames   Int      // Number of games in the match
+  beginAt         DateTime // Match date/time
+  status          String   @default("scheduled") // scheduled, pre-announced, live, finished, announced
+  score           String?  // Match score (e.g., "2-1", "3-0")
+  createdAt       DateTime @default(now())
+
+  @@map("matches")
+}
+
+model StandingCache {
+  id          String @id @default(cuid())
+  tournamentId String // Tournament ID
+  data        String // JSON string of standings/bracket data
+  expiresAt   DateTime // Cache expiration time
+  createdAt   DateTime @default(now())
+
+  @@map("standing_cache")
+}
+
+model GuildSettings {
+  guildId                    String @id
+  name                       String // Nom du serveur Discord
+  memberCount                Int    @default(0) // Nombre de membres
+  channelId                  String // Discord channel ID
+  pingRoles                  String[] @default([]) // Array of role IDs to ping
+  filteredTeams              String[] @default([]) // Array of team IDs to filter matches
+  enablePreMatchNotifications Boolean @default(true) // Enable/disable 30-minute pre-match notifications
+  enableScoreNotifications    Boolean @default(true) // Enable/disable score notifications
+  joinedAt                   DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  // Relations
+  commandStats    CommandStat[]
+  tickets         Ticket[]
+  performanceMetrics PerformanceMetric[]
+
+  @@map("guild_settings")
+}
+
+// Nouveaux modèles pour les statistiques
+
+model CommandStat {
+  id        String   @id @default(cuid())
+  guildId   String   // Discord Guild ID (peut être null pour les stats globales)
+  commandName String // Nom de la commande (nextmatch, standing, etc.)
+  userId    String   // Discord User ID
+  username  String   // Nom d'utilisateur Discord
+  teamArg   String?  // Argument équipe utilisé (pour les stats de popularité)
+  executedAt DateTime @default(now())
+
+  // Relations
+  guild     GuildSettings?   @relation(fields: [guildId], references: [guildId])
+
+  @@map("command_stats")
+}
+
+model Ticket {
+  id          String   @id @default(cuid())
+  guildId     String   // Discord Guild ID
+  userId      String   // Discord User ID
+  username    String   // Nom d'utilisateur Discord
+  type        TicketType // Type de ticket (bug, amélioration)
+  status      TicketStatus @default(OPEN) // Statut du ticket
+  description String?  // Description optionnelle
+  answer      String?  // Réponse optionnelle
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  guild       GuildSettings    @relation(fields: [guildId], references: [guildId])
+
+  @@map("tickets")
+}
+
+model PerformanceMetric {
+  id              String   @id @default(cuid())
+  guildId         String?  // Discord Guild ID (peut être null pour les métriques globales)
+  commandName     String   // Nom de la commande
+  responseTime    Int      // Temps de réponse en millisecondes
+  success         Boolean  // Si la commande s'est exécutée avec succès
+  errorMessage    String?  // Message d'erreur si échec
+  executedAt      DateTime @default(now())
+
+  // Relations
+  guild           GuildSettings?   @relation(fields: [guildId], references: [guildId])
+
+  @@map("performance_metrics")
+}
+
+model TeamPopularity {
+  id          String   @id @default(cuid())
+  teamId      String   // ID de l'équipe (KC, KCB, etc.)
+  teamName    String   // Nom de l'équipe
+  usageCount  Int      @default(0) // Nombre d'utilisations
+  lastUsed    DateTime @default(now())
+
+  @@map("team_popularity")
+}
+
+enum TicketType {
+  BUG
+  IMPROVEMENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
