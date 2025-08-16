@@ -413,7 +413,7 @@ app.post("/api/auth/callback", async (req, res) => {
     });
   } catch (error) {
     console.error("Authentication error:", error);
-    res.status(500).json({ error: "Authentication failed" });
+    return res.status(500).json({ error: "Authentication failed" });
   }
 });
 
@@ -513,7 +513,9 @@ app.get("/auth/callback", async (req, res) => {
     );
   } catch (error) {
     console.error("Authentication error:", error);
-    res.redirect("http://localhost:3000/auth/callback?error=auth_failed");
+    return res.redirect(
+      "http://localhost:3000/auth/callback?error=auth_failed"
+    );
   }
 });
 
