@@ -43,9 +43,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuth = async () => {
     try {
+      console.log("Checking authentication...");
       const userData = await api.getCurrentUser();
+      console.log("User data received:", userData);
       setUser(userData);
     } catch (error) {
+      console.error("Authentication check failed:", error);
       setUser(null);
     } finally {
       setLoading(false);

@@ -18,21 +18,33 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
-// Redis client setup
-const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379",
-});
+// Redis client setup with fallback
+let redisClient: any = null;
+let redisStore: any = null;
 
-redisClient.on("error", (err) => {
-  console.error("Redis Client Error:", err);
-});
+try {
+  redisClient = createClient({
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+  });
 
-redisClient.connect().catch(console.error);
+  redisClient.on("error", (err: any) => {
+    console.error("Redis Client Error:", err);
+  });
 
-const redisStore = new RedisStore({
-  client: redisClient,
-  prefix: "dashboard:",
-});
+  redisClient.connect().catch((err: any) => {
+    console.error("Failed to connect to Redis:", err);
+    redisClient = null;
+  });
+
+  redisStore = new RedisStore({
+    client: redisClient,
+    prefix: "dashboard:",
+  });
+} catch (error) {
+  console.error("Redis setup failed:", error);
+  redisClient = null;
+  redisStore = null;
+}
 
 app.use(
   cors({
@@ -44,9 +56,10 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, "../../dist")));
 
+// Session configuration with better production handling
 app.use(
   session({
-    store: redisStore,
+    store: redisStore || undefined, // Use memory store if Redis is not available
     secret: process.env.JWT_SECRET || "fallback-secret",
     resave: false,
     saveUninitialized: false,
@@ -54,8 +67,10 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? undefined : undefined,
     },
+    name: "dashboard_session",
   })
 );
 
@@ -63,14 +78,16 @@ app.get("/api/health", (_req, res) => {
   return res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Test route for debugging redirects
-app.get("/test-redirect", (_req, res) => {
-  const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-  console.log(
-    "Test redirect to:",
-    `${baseUrl}/auth/callback?success=true&test=1`
-  );
-  return res.redirect(`${baseUrl}/auth/callback?success=true&test=1`);
+app.get("/api/debug/session", (req, res) => {
+  return res.json({
+    sessionID: req.sessionID,
+    sessionData: req.session,
+    hasUser: !!(req.session as any).user,
+    user: (req.session as any).user,
+    redisAvailable: !!redisClient,
+    nodeEnv: process.env.NODE_ENV,
+    baseUrl: process.env.BASE_URL,
+  });
 });
 
 app.get("/api/stats", async (_req, res) => {
@@ -540,6 +557,18 @@ app.get("/auth/callback", async (req, res) => {
       avatar: userData.avatar,
     };
 
+    console.log("Session created with user:", (req.session as any).user);
+    console.log("Session ID:", req.sessionID);
+
+    // Save session explicitly
+    req.session.save((err) => {
+      if (err) {
+        console.error("Error saving session:", err);
+      } else {
+        console.log("Session saved successfully");
+      }
+    });
+
     console.log("Authentication successful, redirecting to:", `${baseUrl}/`);
     return res.redirect(`${baseUrl}/`);
   } catch (error) {
@@ -555,12 +584,18 @@ app.get("/auth/callback", async (req, res) => {
 
 app.get("/api/auth/me", (req, res) => {
   try {
+    console.log("Session ID:", req.sessionID);
+    console.log("Session data:", req.session);
+    console.log("User in session:", (req.session as any).user);
+
     const user = (req.session as any).user;
 
     if (!user) {
+      console.log("No user found in session");
       return res.status(401).json({ error: "Not authenticated" });
     }
 
+    console.log("User authenticated:", user);
     return res.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
