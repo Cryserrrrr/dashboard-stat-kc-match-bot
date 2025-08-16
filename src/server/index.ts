@@ -4,8 +4,13 @@ import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import session from "express-session";
 import jwt from "jsonwebtoken";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const prisma = new PrismaClient();
@@ -18,6 +23,9 @@ app.use(
   })
 );
 app.use(express.json());
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "../../dist")));
 
 // Session configuration
 app.use(
@@ -549,6 +557,10 @@ app.post("/api/auth/logout", (req, res) => {
     console.error("Logout error:", error);
     return res.status(500).json({ error: "Failed to logout" });
   }
+});
+
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(__dirname, "../../dist/index.html"));
 });
 
 app.listen(PORT, () => {
