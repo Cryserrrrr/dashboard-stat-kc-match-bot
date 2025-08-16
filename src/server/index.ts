@@ -640,9 +640,6 @@ app.patch("/api/tickets/:ticketId/status", requireAuth, async (req, res) => {
 
 app.post("/api/tickets/:ticketId/respond", requireAuth, async (req, res) => {
   try {
-    const ticketId = req.params.ticketId;
-    const { response } = req.body;
-
     return res.json({ success: true, message: "Response added successfully" });
   } catch (error) {
     return res.status(500).json({ error: "Failed to add ticket response" });
