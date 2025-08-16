@@ -2,9 +2,6 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
-import session from "express-session";
-import { RedisStore } from "connect-redis";
-import { createClient } from "redis";
 import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -12,65 +9,21 @@ import cookieParser from "cookie-parser";
 
 dotenv.config();
 
+// Extend Express Request interface
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
-
-// Redis client setup with fallback
-let redisClient: any = null;
-let redisStore: any = null;
-
-try {
-  console.log("🔧 Initializing Redis client...");
-  console.log(
-    "🔧 Redis URL:",
-    process.env.REDIS_URL || "redis://localhost:6379"
-  );
-
-  redisClient = createClient({
-    url: process.env.REDIS_URL || "redis://localhost:6379",
-  });
-
-  redisClient.on("error", (err: any) => {
-    console.error("❌ Redis error:", err);
-  });
-
-  redisClient.on("connect", () => {
-    console.log("✅ Redis connected successfully");
-  });
-
-  redisClient.on("ready", () => {
-    console.log("✅ Redis ready");
-  });
-
-  redisClient.on("end", () => {
-    console.log("🔌 Redis connection ended");
-  });
-
-  redisClient
-    .connect()
-    .then(() => {
-      console.log("✅ Redis connection established");
-    })
-    .catch((err: any) => {
-      console.error("❌ Redis connection failed:", err);
-      redisClient = null;
-    });
-
-  redisStore = new RedisStore({
-    client: redisClient,
-    prefix: "dashboard:",
-  });
-
-  console.log("✅ Redis store initialized");
-} catch (error) {
-  console.error("❌ Redis setup failed:", error);
-  redisClient = null;
-  redisStore = null;
-}
 
 app.use(
   cors({
@@ -91,136 +44,77 @@ app.use(cookieParser());
 
 app.use(express.static(path.join(__dirname, "../../dist")));
 
-const sessionConfig = {
-  store: redisStore || undefined,
-  secret: process.env.JWT_SECRET || "fallback-secret",
-  resave: true,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
-      | "none"
-      | "lax",
-    domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
-    path: "/",
-  },
-  name: "dashboard_session",
-};
-
-console.log("🔧 Session config:", {
-  store: redisStore ? "Redis" : "Memory",
-  secret: process.env.JWT_SECRET ? "Set" : "Fallback",
-  resave: sessionConfig.resave,
-  saveUninitialized: sessionConfig.saveUninitialized,
-  cookie: sessionConfig.cookie,
-  nodeEnv: process.env.NODE_ENV,
-});
-
-app.use(session(sessionConfig));
-
 const requireAuth = (req: any, res: any, next: any): void => {
   console.log("🔒 RequireAuth middleware");
-  console.log("🔒 Session ID:", req.sessionID);
-  console.log("🔒 Session exists:", !!req.session);
-  console.log("🔒 User in session:", (req.session as any).user);
 
-  const user = (req.session as any).user;
+  const token =
+    req.cookies.token || req.headers.authorization?.replace("Bearer ", "");
 
-  if (!user) {
-    console.log("❌ No user found in session");
+  if (!token) {
+    console.log("❌ No token found");
     res.status(401).json({ error: "Authentication required" });
     return;
   }
 
-  console.log("✅ User authenticated:", user.username);
-  next();
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "fallback-secret"
+    ) as any;
+    req.user = decoded;
+    console.log("✅ User authenticated:", decoded.username);
+    next();
+  } catch (error) {
+    console.log("❌ Invalid token");
+    res.status(401).json({ error: "Invalid token" });
+  }
 };
+
 app.get("/api/health", (_req, res) => {
   return res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.get("/api/debug/session", (req, res) => {
-  return res.json({
-    sessionID: req.sessionID,
-    sessionData: req.session,
-    hasUser: !!(req.session as any).user,
-    user: (req.session as any).user,
-    redisAvailable: !!redisClient,
-    nodeEnv: process.env.NODE_ENV,
-    baseUrl: process.env.BASE_URL,
-    cookies: req.headers.cookie,
-    origin: req.headers.origin,
-    referer: req.headers.referer,
-    sessionCookie: req.cookies?.dashboard_session,
-    allCookies: req.cookies,
-    usedCode: (req.session as any).usedCode,
-  });
-});
+app.get("/api/debug/auth", (req, res) => {
+  const token =
+    req.cookies.token || req.headers.authorization?.replace("Bearer ", "");
 
-app.get("/api/debug/test-session", (req, res) => {
-  console.log("🧪 Test session request");
-  console.log("🧪 Session ID:", req.sessionID);
-
-  (req.session as any).testData = {
-    timestamp: new Date().toISOString(),
-    random: Math.random(),
-  };
-
-  req.session.save((err) => {
-    if (err) {
-      console.error("❌ Test session save failed:", err);
-      return res.json({
-        error: "Failed to save session",
-        details: err.message,
-      });
-    }
-
-    console.log("✅ Test session saved successfully");
+  if (!token) {
     return res.json({
-      success: true,
-      testData: (req.session as any).testData,
-      sessionID: req.sessionID,
+      authenticated: false,
+      token: null,
       cookies: req.cookies,
-      sessionCookie: req.cookies?.dashboard_session,
+      headers: {
+        authorization: req.headers.authorization,
+        cookie: req.headers.cookie,
+      },
     });
-  });
-});
-
-app.get("/api/debug/redis", async (_req, res) => {
-  console.log("🔍 Redis debug request");
+  }
 
   try {
-    if (!redisClient) {
-      console.log("❌ Redis client not available");
-      return res.json({
-        available: false,
-        error: "Redis client not initialized",
-      });
-    }
-
-    console.log("🔍 Testing Redis connection...");
-    const testKey = "test:connection";
-    const testValue = new Date().toISOString();
-
-    await redisClient.set(testKey, testValue);
-    const retrievedValue = await redisClient.get(testKey);
-    await redisClient.del(testKey);
-
-    console.log("✅ Redis test successful");
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "fallback-secret"
+    );
     return res.json({
-      available: true,
-      test: "successful",
-      setValue: testValue,
-      retrievedValue: retrievedValue,
-      match: testValue === retrievedValue,
+      authenticated: true,
+      token: token.substring(0, 20) + "...",
+      user: decoded,
+      cookies: req.cookies,
+      headers: {
+        authorization: req.headers.authorization,
+        cookie: req.headers.cookie,
+      },
     });
   } catch (error) {
-    console.error("❌ Redis test failed:", error);
     return res.json({
-      available: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      authenticated: false,
+      token: token.substring(0, 20) + "...",
+      error: "Invalid token",
+      cookies: req.cookies,
+      headers: {
+        authorization: req.headers.authorization,
+        cookie: req.headers.cookie,
+      },
     });
   }
 });
@@ -574,11 +468,14 @@ app.post("/api/auth/callback", async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    (req.session as any).user = {
-      id: userData.id,
-      username: userData.username,
-      avatar: userData.avatar,
-    };
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
+    });
 
     return res.json({
       success: true,
@@ -596,13 +493,6 @@ app.post("/api/auth/callback", async (req, res) => {
 
 app.get("/auth/callback", async (req, res) => {
   console.log("🔐 Auth callback started");
-  console.log("🔐 Session ID:", req.sessionID);
-  console.log("🔐 Cookies:", req.cookies);
-  console.log("🔐 Headers:", {
-    origin: req.headers.origin,
-    referer: req.headers.referer,
-    cookie: req.headers.cookie,
-  });
 
   try {
     const { code, error } = req.query;
@@ -615,19 +505,9 @@ app.get("/auth/callback", async (req, res) => {
       return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
     }
 
-    if ((req.session as any).user) {
-      console.log("✅ User already authenticated, redirecting to dashboard");
-      return res.redirect(`${baseUrl}/`);
-    }
-
     if (!code) {
       console.log("❌ No authorization code");
       return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
-    }
-
-    if ((req.session as any).usedCode === code) {
-      console.log("❌ Authorization code already used");
-      return res.redirect(`${baseUrl}/auth/callback?error=code_already_used`);
     }
 
     const clientId = process.env.DISCORD_CLIENT_ID;
@@ -687,48 +567,24 @@ app.get("/auth/callback", async (req, res) => {
       username: userData.username,
     });
 
-    (req.session as any).usedCode = code;
-    (req.session as any).user = {
-      id: userData.id,
-      username: userData.username,
-      avatar: userData.avatar,
-    };
+    const token = jwt.sign(
+      {
+        id: userData.id,
+        username: userData.username,
+        avatar: userData.avatar,
+      },
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "24h" }
+    );
 
-    console.log("🔐 Session before save:", {
-      sessionID: req.sessionID,
-      hasUser: !!(req.session as any).user,
-      user: (req.session as any).user,
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
     });
-
-    // Force session save and wait for completion
-    await new Promise<void>((resolve, reject) => {
-      req.session.save((err) => {
-        if (err) {
-          console.error("❌ Session save failed:", err);
-          reject(err);
-        } else {
-          console.log("✅ Session saved successfully");
-          console.log("🔐 Session after save:", {
-            sessionID: req.sessionID,
-            hasUser: !!(req.session as any).user,
-          });
-          resolve();
-        }
-      });
-    });
-
-    if (process.env.NODE_ENV === "production") {
-      console.log("🔧 Setting production cookie");
-      res.cookie("dashboard_session", req.sessionID, {
-        secure: true,
-        httpOnly: true,
-        sameSite: "none",
-        domain: "cryser.fr",
-        path: "/",
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-      console.log("✅ Production cookie set");
-    }
 
     console.log("🔄 Redirecting to:", `${baseUrl}/`);
     return res.redirect(`${baseUrl}/`);
@@ -740,60 +596,41 @@ app.get("/auth/callback", async (req, res) => {
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
   console.log("🔍 Auth/me request");
-  console.log("🔍 Session ID:", req.sessionID);
-  console.log("🔍 Cookies:", req.cookies);
-  console.log("🔍 Session exists:", !!req.session);
-  console.log("🔍 Session keys:", req.session ? Object.keys(req.session) : []);
-  console.log("🔍 User in session:", (req.session as any).user);
+  console.log("🔍 User:", req.user);
 
   try {
-    const user = (req.session as any).user;
-
-    if (!user) {
-      console.log("❌ No user in session");
-      return res.status(401).json({
-        error: "Not authenticated",
-        debug: {
-          sessionID: req.sessionID,
-          hasSession: !!req.session,
-          sessionKeys: req.session ? Object.keys(req.session) : [],
-          cookies: req.cookies,
-        },
-      });
-    }
-
-    console.log("✅ User found:", user);
-    return res.json(user);
+    return res.json(req.user);
   } catch (error) {
     console.error("❌ Auth/me error:", error);
     return res.status(500).json({ error: "Failed to fetch user" });
   }
 });
 
-app.post("/api/auth/logout", requireAuth, (req, res) => {
+app.post("/api/auth/logout", requireAuth, (_req, res) => {
   try {
-    req.session.destroy((err) => {
-      if (err) {
-        res.status(500).json({ error: "Failed to logout" });
-        return;
-      }
-      res.json({ success: true });
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
     });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Failed to logout" });
   }
 });
 
-app.post("/api/auth/clear-session", (req, res) => {
+app.post("/api/auth/clear-session", (_req, res) => {
   try {
-    req.session.destroy((err) => {
-      if (err) {
-        res.status(500).json({ error: "Failed to clear session" });
-        return;
-      }
-      res.clearCookie("dashboard_session");
-      res.json({ success: true, message: "Session cleared" });
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+      path: "/",
     });
+    res.json({ success: true, message: "Session cleared" });
   } catch (error) {
     res.status(500).json({ error: "Failed to clear session" });
   }
@@ -851,6 +688,5 @@ app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
   console.log("🌍 Environment:", process.env.NODE_ENV || "development");
   console.log("🔧 Base URL:", process.env.BASE_URL || "http://localhost:3000");
-  console.log("🔧 Redis available:", !!redisClient);
-  console.log("🔧 Session store:", redisStore ? "Redis" : "Memory");
+  // Removed Redis and session logs as they are no longer used.
 });
