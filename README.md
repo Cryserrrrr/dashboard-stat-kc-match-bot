@@ -38,6 +38,7 @@ Create a `.env` file with:
 # Database
 DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
 PORT=5000
+NODE_ENV=production
 
 # Discord OAuth2
 VITE_DISCORD_CLIENT_ID="YOUR_CLIENT_ID"

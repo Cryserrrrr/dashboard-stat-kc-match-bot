@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.BASE_URL || "http://localhost:3000",
     credentials: true,
   })
 );
@@ -34,9 +34,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true in production with HTTPS
+      secure: process.env.NODE_ENV === "production", // Set to true in production with HTTPS
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "lax",
     },
   })
 );
