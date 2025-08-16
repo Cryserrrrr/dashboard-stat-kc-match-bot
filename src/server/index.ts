@@ -560,19 +560,18 @@ app.post("/api/auth/logout", (req, res) => {
       }
       return res.json({ success: true });
     });
+    return;
   } catch (error) {
     console.error("Logout error:", error);
     return res.status(500).json({ error: "Failed to logout" });
   }
 });
 
-// Catch-all route for React app - must be last
 app.get("*", (req, res) => {
-  // Don't serve index.html for API routes
   if (req.path.startsWith("/api/")) {
     return res.status(404).json({ error: "Not found" });
   }
-  res.sendFile(path.join(__dirname, "../../dist/index.html"));
+  return res.sendFile(path.join(__dirname, "../../dist/index.html"));
 });
 
 app.listen(PORT, () => {
