@@ -34,7 +34,7 @@ app.use(
 );
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  return res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 app.get("/api/stats", async (_req, res) => {
@@ -116,7 +116,7 @@ app.get("/api/stats", async (_req, res) => {
       where: { status: "RESOLVED" },
     });
 
-    res.json({
+    return res.json({
       totalServers,
       totalMatches,
       totalMembers,
@@ -155,7 +155,7 @@ app.get("/api/stats", async (_req, res) => {
     });
   } catch (error) {
     console.error("Error fetching stats:", error);
-    res.status(500).json({ error: "Failed to fetch stats" });
+    return res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
 
@@ -164,10 +164,10 @@ app.get("/api/servers", async (_req, res) => {
     const servers = await prisma.guildSettings.findMany({
       orderBy: { joinedAt: "desc" },
     });
-    res.json(servers);
+    return res.json(servers);
   } catch (error) {
     console.error("Error fetching servers:", error);
-    res.status(500).json({ error: "Failed to fetch servers" });
+    return res.status(500).json({ error: "Failed to fetch servers" });
   }
 });
 
@@ -191,7 +191,7 @@ app.get("/api/matches", async (req, res) => {
       prisma.match.count({ where }),
     ]);
 
-    res.json({
+    return res.json({
       matches,
       total,
       page,
@@ -199,7 +199,7 @@ app.get("/api/matches", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching matches:", error);
-    res.status(500).json({ error: "Failed to fetch matches" });
+    return res.status(500).json({ error: "Failed to fetch matches" });
   }
 });
 
@@ -222,7 +222,7 @@ app.get("/api/command-stats", async (req, res) => {
       prisma.commandStat.count({ where }),
     ]);
 
-    res.json({
+    return res.json({
       commands,
       total,
       page,
@@ -230,7 +230,7 @@ app.get("/api/command-stats", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching command stats:", error);
-    res.status(500).json({ error: "Failed to fetch command stats" });
+    return res.status(500).json({ error: "Failed to fetch command stats" });
   }
 });
 
@@ -254,7 +254,7 @@ app.get("/api/tickets", async (req, res) => {
       prisma.ticket.count({ where }),
     ]);
 
-    res.json({
+    return res.json({
       tickets,
       total,
       page,
@@ -262,7 +262,7 @@ app.get("/api/tickets", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching tickets:", error);
-    res.status(500).json({ error: "Failed to fetch tickets" });
+    return res.status(500).json({ error: "Failed to fetch tickets" });
   }
 });
 
@@ -271,10 +271,10 @@ app.get("/api/team-popularity", async (_req, res) => {
     const teamPopularity = await prisma.teamPopularity.findMany({
       orderBy: { usageCount: "desc" },
     });
-    res.json(teamPopularity);
+    return res.json(teamPopularity);
   } catch (error) {
     console.error("Error fetching team popularity:", error);
-    res.status(500).json({ error: "Failed to fetch team popularity" });
+    return res.status(500).json({ error: "Failed to fetch team popularity" });
   }
 });
 
@@ -299,7 +299,7 @@ app.get("/api/performance-metrics", async (req, res) => {
       where: { ...where, success: true },
     });
 
-    res.json({
+    return res.json({
       metrics,
       summary: {
         averageResponseTime:
@@ -313,7 +313,9 @@ app.get("/api/performance-metrics", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching performance metrics:", error);
-    res.status(500).json({ error: "Failed to fetch performance metrics" });
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch performance metrics" });
   }
 });
 
@@ -402,7 +404,7 @@ app.post("/api/auth/callback", async (req, res) => {
       avatar: userData.avatar,
     };
 
-    res.json({
+    return res.json({
       success: true,
       user: {
         id: userData.id,
