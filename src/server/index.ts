@@ -510,7 +510,7 @@ app.get("/auth/callback", async (req, res) => {
       avatar: userData.avatar,
     };
 
-    res.redirect(
+    return res.redirect(
       `http://localhost:3000/auth/callback?success=true&token=${token}`
     );
   } catch (error) {
