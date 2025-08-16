@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Install OpenSSL and other required dependencies for Prisma
-RUN apk add --no-cache openssl libssl1.1
+RUN apk add --no-cache openssl
 
 # Set working directory
 WORKDIR /app
