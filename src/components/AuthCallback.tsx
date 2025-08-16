@@ -34,6 +34,18 @@ export function AuthCallback() {
         return;
       }
 
+      // If we have success=true but no token, it means we were redirected from server
+      if (success === "true") {
+        await checkAuth();
+        setStatus("success");
+        setMessage("Authentication successful! Redirecting...");
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1500);
+        return;
+      }
+
       if (!code) {
         setStatus("error");
         setMessage("No authorization code received.");

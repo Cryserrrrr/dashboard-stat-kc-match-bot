@@ -46,6 +46,16 @@ app.get("/api/health", (_req, res) => {
   return res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Test route for debugging redirects
+app.get("/test-redirect", (req, res) => {
+  const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+  console.log(
+    "Test redirect to:",
+    `${baseUrl}/auth/callback?success=true&test=1`
+  );
+  return res.redirect(`${baseUrl}/auth/callback?success=true&test=1`);
+});
+
 app.get("/api/stats", async (_req, res) => {
   try {
     const totalServers = await prisma.guildSettings.count();
@@ -433,11 +443,15 @@ app.get("/auth/callback", async (req, res) => {
     const { code, error } = req.query;
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
+    console.log("Auth callback received:", { code, error, baseUrl });
+
     if (error) {
+      console.log("Redirecting with error:", error);
       return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
     }
 
     if (!code) {
+      console.log("No code received, redirecting with error");
       return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
     }
 
@@ -447,6 +461,11 @@ app.get("/auth/callback", async (req, res) => {
 
     if (!clientId || !clientSecret || !redirectUri) {
       console.error("Missing Discord OAuth configuration");
+      console.log("Config check:", {
+        clientId: !!clientId,
+        clientSecret: !!clientSecret,
+        redirectUri,
+      });
       return res.redirect(`${baseUrl}/auth/callback?error=config_error`);
     }
 
@@ -514,10 +533,15 @@ app.get("/auth/callback", async (req, res) => {
       avatar: userData.avatar,
     };
 
-    return res.redirect(`${baseUrl}/auth/callback?success=true&token=${token}`);
+    console.log("Authentication successful, redirecting to:", `${baseUrl}/`);
+    return res.redirect(`${baseUrl}/`);
   } catch (error) {
     console.error("Authentication error:", error);
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    console.log(
+      "Authentication failed, redirecting to:",
+      `${baseUrl}/auth/callback?error=auth_failed`
+    );
     return res.redirect(`${baseUrl}/auth/callback?error=auth_failed`);
   }
 });
@@ -552,7 +576,12 @@ app.post("/api/auth/logout", (req, res) => {
   }
 });
 
-app.get("*", (_req, res) => {
+// Catch-all route for React app - must be last
+app.get("*", (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ error: "Not found" });
+  }
   res.sendFile(path.join(__dirname, "../../dist/index.html"));
 });
 
