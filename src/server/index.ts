@@ -71,6 +71,15 @@ const sessionConfig = {
 
 app.use(session(sessionConfig));
 
+const requireAuth = (req: any, res: any, next: any) => {
+  const user = (req.session as any).user;
+
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  next();
+};
 app.get("/api/health", (_req, res) => {
   return res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -110,7 +119,7 @@ app.get("/api/debug/test-session", (req, res) => {
   });
 });
 
-app.get("/api/stats", async (_req, res) => {
+app.get("/api/stats", requireAuth, async (_req, res) => {
   try {
     const totalServers = await prisma.guildSettings.count();
     const totalMatches = await prisma.match.count();
@@ -231,7 +240,7 @@ app.get("/api/stats", async (_req, res) => {
   }
 });
 
-app.get("/api/servers", async (_req, res) => {
+app.get("/api/servers", requireAuth, async (_req, res) => {
   try {
     const servers = await prisma.guildSettings.findMany({
       orderBy: { joinedAt: "desc" },
@@ -242,7 +251,7 @@ app.get("/api/servers", async (_req, res) => {
   }
 });
 
-app.get("/api/matches", async (req, res) => {
+app.get("/api/matches", requireAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = 12;
@@ -273,7 +282,7 @@ app.get("/api/matches", async (req, res) => {
   }
 });
 
-app.get("/api/command-stats", async (req, res) => {
+app.get("/api/command-stats", requireAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = 20;
@@ -303,7 +312,7 @@ app.get("/api/command-stats", async (req, res) => {
   }
 });
 
-app.get("/api/tickets", async (req, res) => {
+app.get("/api/tickets", requireAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = 20;
@@ -334,7 +343,7 @@ app.get("/api/tickets", async (req, res) => {
   }
 });
 
-app.get("/api/team-popularity", async (_req, res) => {
+app.get("/api/team-popularity", requireAuth, async (_req, res) => {
   try {
     const teamPopularity = await prisma.teamPopularity.findMany({
       orderBy: { usageCount: "desc" },
@@ -345,7 +354,7 @@ app.get("/api/team-popularity", async (_req, res) => {
   }
 });
 
-app.get("/api/performance-metrics", async (req, res) => {
+app.get("/api/performance-metrics", requireAuth, async (req, res) => {
   try {
     const where: any = {};
     if (req.query.guildId) where.guildId = req.query.guildId;
@@ -568,7 +577,7 @@ app.get("/auth/callback", async (req, res) => {
   }
 });
 
-app.get("/api/auth/me", (req, res) => {
+app.get("/api/auth/me", requireAuth, (req, res) => {
   try {
     const user = (req.session as any).user;
 
@@ -582,7 +591,7 @@ app.get("/api/auth/me", (req, res) => {
   }
 });
 
-app.post("/api/auth/logout", (req, res) => {
+app.post("/api/auth/logout", requireAuth, (req, res) => {
   try {
     req.session.destroy((err) => {
       if (err) {
@@ -593,6 +602,50 @@ app.post("/api/auth/logout", (req, res) => {
     return;
   } catch (error) {
     return res.status(500).json({ error: "Failed to logout" });
+  }
+});
+
+app.get("/api/tickets/:ticketId", requireAuth, async (req, res) => {
+  try {
+    const ticketId = req.params.ticketId;
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    return res.json(ticket);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch ticket" });
+  }
+});
+
+app.patch("/api/tickets/:ticketId/status", requireAuth, async (req, res) => {
+  try {
+    const ticketId = req.params.ticketId;
+    const { status } = req.body;
+
+    const ticket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status },
+    });
+
+    return res.json(ticket);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update ticket status" });
+  }
+});
+
+app.post("/api/tickets/:ticketId/respond", requireAuth, async (req, res) => {
+  try {
+    const ticketId = req.params.ticketId;
+    const { response } = req.body;
+
+    return res.json({ success: true, message: "Response added successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to add ticket response" });
   }
 });
 

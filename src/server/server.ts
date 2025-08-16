@@ -2,6 +2,9 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import session from "express-session";
+import { RedisStore } from "connect-redis";
+import { createClient } from "redis";
 import path from "path";
 
 dotenv.config();
@@ -10,16 +13,75 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Redis client setup with fallback
+let redisClient: any = null;
+let redisStore: any = null;
+
+try {
+  redisClient = createClient({
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+  });
+
+  redisClient.on("error", () => {});
+
+  redisClient.connect().catch(() => {
+    redisClient = null;
+  });
+
+  redisStore = new RedisStore({
+    client: redisClient,
+    prefix: "dashboard:",
+  });
+} catch (error) {
+  redisClient = null;
+  redisStore = null;
+}
+
+app.use(
+  cors({
+    origin: process.env.BASE_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.use(express.static(path.join(process.cwd(), "dist")));
+
+const sessionConfig = {
+  store: redisStore || undefined,
+  secret: process.env.JWT_SECRET || "fallback-secret",
+  resave: true,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
+      | "none"
+      | "lax",
+    domain: process.env.NODE_ENV === "production" ? undefined : undefined,
+  },
+  name: "dashboard_session",
+};
+
+app.use(session(sessionConfig));
+
+// Middleware d'authentification pour les routes API
+const requireAuth = (req: any, res: any, next: any) => {
+  const user = (req.session as any).user;
+
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  next();
+};
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.get("/api/stats", async (_req, res) => {
+app.get("/api/stats", requireAuth, async (_req, res) => {
   try {
     const totalServers = await prisma.guildSettings.count();
     const totalMatches = await prisma.match.count();
@@ -141,7 +203,7 @@ app.get("/api/stats", async (_req, res) => {
   }
 });
 
-app.get("/api/servers", async (_req, res) => {
+app.get("/api/servers", requireAuth, async (_req, res) => {
   try {
     const servers = await prisma.guildSettings.findMany({
       orderBy: { joinedAt: "desc" },
@@ -153,7 +215,7 @@ app.get("/api/servers", async (_req, res) => {
   }
 });
 
-app.get("/api/matches", async (req, res) => {
+app.get("/api/matches", requireAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = 12;
@@ -185,7 +247,7 @@ app.get("/api/matches", async (req, res) => {
   }
 });
 
-app.get("/api/command-stats", async (req, res) => {
+app.get("/api/command-stats", requireAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = 20;
@@ -216,7 +278,7 @@ app.get("/api/command-stats", async (req, res) => {
   }
 });
 
-app.get("/api/tickets", async (req, res) => {
+app.get("/api/tickets", requireAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = 20;
@@ -248,7 +310,7 @@ app.get("/api/tickets", async (req, res) => {
   }
 });
 
-app.get("/api/team-popularity", async (_req, res) => {
+app.get("/api/team-popularity", requireAuth, async (_req, res) => {
   try {
     const teamPopularity = await prisma.teamPopularity.findMany({
       orderBy: { usageCount: "desc" },
@@ -260,7 +322,7 @@ app.get("/api/team-popularity", async (_req, res) => {
   }
 });
 
-app.get("/api/performance-metrics", async (req, res) => {
+app.get("/api/performance-metrics", requireAuth, async (req, res) => {
   try {
     const where: any = {};
     if (req.query.guildId) where.guildId = req.query.guildId;
