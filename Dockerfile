@@ -26,5 +26,5 @@ RUN npm prune --production
 # Expose port
 EXPOSE 5000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the application using the compiled server
+CMD ["node", "dist/server/index.js"]
