@@ -103,7 +103,8 @@ const sessionConfig = {
     sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
       | "none"
       | "lax",
-    domain: process.env.NODE_ENV === "production" ? ".cryser.fr" : undefined,
+    domain: process.env.NODE_ENV === "production" ? "cryser.fr" : undefined,
+    path: "/",
   },
   name: "dashboard_session",
 };
@@ -153,6 +154,7 @@ app.get("/api/debug/session", (req, res) => {
     referer: req.headers.referer,
     sessionCookie: req.cookies?.dashboard_session,
     allCookies: req.cookies,
+    usedCode: (req.session as any).usedCode,
   });
 });
 
@@ -612,9 +614,19 @@ app.get("/auth/callback", async (req, res) => {
       return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
     }
 
+    if ((req.session as any).user) {
+      console.log("✅ User already authenticated, redirecting to dashboard");
+      return res.redirect(`${baseUrl}/`);
+    }
+
     if (!code) {
       console.log("❌ No authorization code");
       return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
+    }
+
+    if ((req.session as any).usedCode === code) {
+      console.log("❌ Authorization code already used");
+      return res.redirect(`${baseUrl}/auth/callback?error=code_already_used`);
     }
 
     const clientId = process.env.DISCORD_CLIENT_ID;
@@ -674,6 +686,7 @@ app.get("/auth/callback", async (req, res) => {
       username: userData.username,
     });
 
+    (req.session as any).usedCode = code;
     (req.session as any).user = {
       id: userData.id,
       username: userData.username,
@@ -709,7 +722,8 @@ app.get("/auth/callback", async (req, res) => {
         secure: true,
         httpOnly: true,
         sameSite: "none",
-        domain: ".cryser.fr",
+        domain: "cryser.fr",
+        path: "/",
         maxAge: 24 * 60 * 60 * 1000,
       });
       console.log("✅ Production cookie set");
@@ -766,6 +780,20 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
     return;
   } catch (error) {
     return res.status(500).json({ error: "Failed to logout" });
+  }
+});
+
+app.post("/api/auth/clear-session", (req, res) => {
+  try {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to clear session" });
+      }
+      res.clearCookie("dashboard_session");
+      return res.json({ success: true, message: "Session cleared" });
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to clear session" });
   }
 });
 

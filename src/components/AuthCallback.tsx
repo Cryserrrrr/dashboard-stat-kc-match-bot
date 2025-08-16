@@ -75,6 +75,8 @@ export function AuthCallback() {
         return "Access denied. You are not authorized to access this dashboard.";
       case "auth_failed":
         return "Authentication failed. Please try again.";
+      case "code_already_used":
+        return "Authorization code already used. Please try logging in again.";
       default:
         return "Authentication failed. Please try again.";
     }
