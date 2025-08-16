@@ -774,12 +774,13 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
   try {
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ error: "Failed to logout" });
+        res.status(500).json({ error: "Failed to logout" });
+        return;
       }
-      return res.json({ success: true });
+      res.json({ success: true });
     });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to logout" });
+    res.status(500).json({ error: "Failed to logout" });
   }
 });
 
@@ -787,13 +788,14 @@ app.post("/api/auth/clear-session", (req, res) => {
   try {
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ error: "Failed to clear session" });
+        res.status(500).json({ error: "Failed to clear session" });
+        return;
       }
       res.clearCookie("dashboard_session");
-      return res.json({ success: true, message: "Session cleared" });
+      res.json({ success: true, message: "Session cleared" });
     });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to clear session" });
+    res.status(500).json({ error: "Failed to clear session" });
   }
 });
 
