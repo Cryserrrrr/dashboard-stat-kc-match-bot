@@ -15,6 +15,12 @@ RUN npm ci
 
 # Copy source code
 COPY . .
+ARG VITE_DISCORD_CLIENT_ID
+ARG VITE_DISCORD_REDIRECT_URI
+
+# Expose env variables for the build process
+ENV VITE_DISCORD_CLIENT_ID=${VITE_DISCORD_CLIENT_ID}
+ENV VITE_DISCORD_REDIRECT_URI=${VITE_DISCORD_REDIRECT_URI}
 
 # Generate Prisma client
 RUN npx prisma generate

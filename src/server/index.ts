@@ -335,9 +335,9 @@ app.post("/api/auth/callback", async (req, res) => {
       return res.status(400).json({ error: "Authorization code is required" });
     }
 
-    const clientId = process.env.VITE_DISCORD_CLIENT_ID;
-    const clientSecret = process.env.VITE_DISCORD_CLIENT_SECRET;
-    const redirectUri = process.env.VITE_DISCORD_REDIRECT_URI;
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+    const redirectUri = process.env.DISCORD_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
       console.error("Missing Discord OAuth configuration");
@@ -439,9 +439,9 @@ app.get("/auth/callback", async (req, res) => {
       return res.redirect("http://localhost:3000/auth/callback?error=no_code");
     }
 
-    const clientId = process.env.VITE_DISCORD_CLIENT_ID;
-    const clientSecret = process.env.VITE_DISCORD_CLIENT_SECRET;
-    const redirectUri = process.env.VITE_DISCORD_REDIRECT_URI;
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+    const redirectUri = process.env.DISCORD_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
       console.error("Missing Discord OAuth configuration");
