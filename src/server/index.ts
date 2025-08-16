@@ -97,7 +97,6 @@ app.get("/api/debug/session", (req, res) => {
 });
 
 app.get("/api/debug/test-session", (req, res) => {
-  // Test session storage
   (req.session as any).testData = {
     timestamp: new Date().toISOString(),
     random: Math.random(),
@@ -638,7 +637,7 @@ app.patch("/api/tickets/:ticketId/status", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/tickets/:ticketId/respond", requireAuth, async (req, res) => {
+app.post("/api/tickets/:ticketId/respond", requireAuth, async (_req, res) => {
   try {
     return res.json({ success: true, message: "Response added successfully" });
   } catch (error) {
