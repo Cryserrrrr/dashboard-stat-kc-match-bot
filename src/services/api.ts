@@ -145,7 +145,10 @@ export const api = {
       credentials: "include",
     });
     if (!response.ok) {
-      throw new Error("Not authenticated");
+      if (response.status === 401) {
+        throw new Error("Not authenticated");
+      }
+      throw new Error(`Failed to get user: ${response.status}`);
     }
     return response.json();
   },

@@ -46,6 +46,8 @@ app.use(
   cors({
     origin: process.env.BASE_URL || "http://localhost:3000",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 app.use(express.json());
@@ -55,7 +57,7 @@ app.use(express.static(path.join(__dirname, "../../dist")));
 const sessionConfig = {
   store: redisStore || undefined,
   secret: process.env.JWT_SECRET || "fallback-secret",
-  resave: true,
+  resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === "production",
@@ -63,7 +65,8 @@ const sessionConfig = {
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
       | "none"
-      | "lax",
+      | "lax"
+      | "strict",
     domain: process.env.NODE_ENV === "production" ? undefined : undefined,
   },
   name: "dashboard_session",
@@ -93,6 +96,9 @@ app.get("/api/debug/session", (req, res) => {
     redisAvailable: !!redisClient,
     nodeEnv: process.env.NODE_ENV,
     baseUrl: process.env.BASE_URL,
+    cookies: req.headers.cookie,
+    origin: req.headers.origin,
+    referer: req.headers.referer,
   });
 });
 
@@ -569,7 +575,7 @@ app.get("/auth/callback", async (req, res) => {
       });
     });
 
-    return res.redirect(`${baseUrl}/auth/callback?success=true`);
+    return res.redirect(`${baseUrl}/`);
   } catch (error) {
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     return res.redirect(`${baseUrl}/auth/callback?error=auth_failed`);

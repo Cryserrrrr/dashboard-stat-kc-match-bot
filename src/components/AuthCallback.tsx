@@ -14,35 +14,10 @@ export function AuthCallback() {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get("code");
       const error = urlParams.get("error");
-      const success = urlParams.get("success");
-      const token = urlParams.get("token");
 
       if (error) {
         setStatus("error");
         setMessage(getErrorMessage(error));
-        return;
-      }
-
-      if (success === "true" && token) {
-        await checkAuth();
-        setStatus("success");
-        setMessage("Authentication successful! Redirecting...");
-
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1500);
-        return;
-      }
-
-      // If we have success=true but no token, it means we were redirected from server
-      if (success === "true") {
-        await checkAuth();
-        setStatus("success");
-        setMessage("Authentication successful! Redirecting...");
-
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1500);
         return;
       }
 

@@ -47,6 +47,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userData);
     } catch (error) {
       setUser(null);
+      if (error instanceof Error && error.message === "Not authenticated") {
+      } else {
+        console.error("Auth check failed:", error);
+      }
     } finally {
       setLoading(false);
     }
