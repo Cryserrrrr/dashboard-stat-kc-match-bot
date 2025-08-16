@@ -47,7 +47,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 // Test route for debugging redirects
-app.get("/test-redirect", (req, res) => {
+app.get("/test-redirect", (_req, res) => {
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
   console.log(
     "Test redirect to:",
@@ -516,16 +516,6 @@ app.get("/auth/callback", async (req, res) => {
     ) {
       return res.redirect(`${baseUrl}/auth/callback?error=unauthorized`);
     }
-
-    const token = jwt.sign(
-      {
-        id: userData.id,
-        username: userData.username,
-        avatar: userData.avatar,
-      },
-      process.env.JWT_SECRET || "fallback-secret",
-      { expiresIn: "24h" }
-    );
 
     (req.session as any).user = {
       id: userData.id,
