@@ -185,7 +185,7 @@ app.get("/api/debug/test-session", (req, res) => {
   });
 });
 
-app.get("/api/debug/redis", async (req, res) => {
+app.get("/api/debug/redis", async (_req, res) => {
   console.log("🔍 Redis debug request");
 
   try {
