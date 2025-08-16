@@ -57,22 +57,32 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "../../dist")));
 
 // Session configuration with better production handling
-app.use(
-  session({
-    store: redisStore || undefined, // Use memory store if Redis is not available
-    secret: process.env.JWT_SECRET || "fallback-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      domain: process.env.NODE_ENV === "production" ? undefined : undefined,
-    },
-    name: "dashboard_session",
-  })
-);
+const sessionConfig = {
+  store: redisStore || undefined, // Use memory store if Redis is not available
+  secret: process.env.JWT_SECRET || "fallback-secret",
+  resave: true, // Force resave to ensure session is saved
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
+      | "none"
+      | "lax",
+    domain: process.env.NODE_ENV === "production" ? undefined : undefined,
+  },
+  name: "dashboard_session",
+};
+
+console.log("Session configuration:", {
+  store: redisStore ? "Redis" : "Memory",
+  redisAvailable: !!redisClient,
+  nodeEnv: process.env.NODE_ENV,
+  secure: sessionConfig.cookie.secure,
+  sameSite: sessionConfig.cookie.sameSite,
+});
+
+app.use(session(sessionConfig));
 
 app.get("/api/health", (_req, res) => {
   return res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -87,6 +97,31 @@ app.get("/api/debug/session", (req, res) => {
     redisAvailable: !!redisClient,
     nodeEnv: process.env.NODE_ENV,
     baseUrl: process.env.BASE_URL,
+  });
+});
+
+app.get("/api/debug/test-session", (req, res) => {
+  // Test session storage
+  (req.session as any).testData = {
+    timestamp: new Date().toISOString(),
+    random: Math.random(),
+  };
+
+  req.session.save((err) => {
+    if (err) {
+      console.error("Error saving test session:", err);
+      return res.json({
+        error: "Failed to save session",
+        details: err.message,
+      });
+    }
+
+    console.log("Test session saved:", (req.session as any).testData);
+    return res.json({
+      success: true,
+      testData: (req.session as any).testData,
+      sessionID: req.sessionID,
+    });
   });
 });
 
@@ -560,13 +595,17 @@ app.get("/auth/callback", async (req, res) => {
     console.log("Session created with user:", (req.session as any).user);
     console.log("Session ID:", req.sessionID);
 
-    // Save session explicitly
-    req.session.save((err) => {
-      if (err) {
-        console.error("Error saving session:", err);
-      } else {
-        console.log("Session saved successfully");
-      }
+    // Force session save and wait for completion
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error("Error saving session:", err);
+          reject(err);
+        } else {
+          console.log("Session saved successfully");
+          resolve();
+        }
+      });
     });
 
     console.log("Authentication successful, redirecting to:", `${baseUrl}/`);
