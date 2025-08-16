@@ -430,13 +430,14 @@ app.post("/api/auth/callback", async (req, res) => {
 app.get("/auth/callback", async (req, res) => {
   try {
     const { code, error } = req.query;
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
     if (error) {
-      return res.redirect(`http://localhost:3000/auth/callback?error=${error}`);
+      return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
     }
 
     if (!code) {
-      return res.redirect("http://localhost:3000/auth/callback?error=no_code");
+      return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
     }
 
     const clientId = process.env.DISCORD_CLIENT_ID;
@@ -445,9 +446,7 @@ app.get("/auth/callback", async (req, res) => {
 
     if (!clientId || !clientSecret || !redirectUri) {
       console.error("Missing Discord OAuth configuration");
-      return res.redirect(
-        "http://localhost:3000/auth/callback?error=config_error"
-      );
+      return res.redirect(`${baseUrl}/auth/callback?error=config_error`);
     }
 
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
@@ -470,7 +469,7 @@ app.get("/auth/callback", async (req, res) => {
         await tokenResponse.text()
       );
       return res.redirect(
-        "http://localhost:3000/auth/callback?error=token_exchange_failed"
+        `${baseUrl}/auth/callback?error=token_exchange_failed`
       );
     }
 
@@ -483,9 +482,7 @@ app.get("/auth/callback", async (req, res) => {
     });
 
     if (!userResponse.ok) {
-      return res.redirect(
-        "http://localhost:3000/auth/callback?error=user_fetch_failed"
-      );
+      return res.redirect(`${baseUrl}/auth/callback?error=user_fetch_failed`);
     }
 
     const userData = (await userResponse.json()) as any;
@@ -497,9 +494,7 @@ app.get("/auth/callback", async (req, res) => {
       authorizedUserIds.length > 0 &&
       !authorizedUserIds.includes(userData.id)
     ) {
-      return res.redirect(
-        "http://localhost:3000/auth/callback?error=unauthorized"
-      );
+      return res.redirect(`${baseUrl}/auth/callback?error=unauthorized`);
     }
 
     const token = jwt.sign(
@@ -518,14 +513,11 @@ app.get("/auth/callback", async (req, res) => {
       avatar: userData.avatar,
     };
 
-    return res.redirect(
-      `http://localhost:3000/auth/callback?success=true&token=${token}`
-    );
+    return res.redirect(`${baseUrl}/auth/callback?success=true&token=${token}`);
   } catch (error) {
     console.error("Authentication error:", error);
-    return res.redirect(
-      "http://localhost:3000/auth/callback?error=auth_failed"
-    );
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    return res.redirect(`${baseUrl}/auth/callback?error=auth_failed`);
   }
 });
 
