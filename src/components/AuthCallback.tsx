@@ -53,7 +53,6 @@ export function AuthCallback() {
       }
 
       try {
-        console.log("Sending code to server:", code);
         const response = await fetch("/api/auth/callback", {
           method: "POST",
           headers: {
@@ -63,17 +62,12 @@ export function AuthCallback() {
           credentials: "include",
         });
 
-        console.log("Response status:", response.status);
-        console.log("Response headers:", response.headers);
-
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("Authentication failed:", errorText);
           throw new Error(`Failed to authenticate: ${response.status}`);
         }
 
         const result = await response.json();
-        console.log("Authentication result:", result);
 
         await checkAuth();
         setStatus("success");
@@ -83,7 +77,6 @@ export function AuthCallback() {
           window.location.href = "/";
         }, 1500);
       } catch (error) {
-        console.error("Authentication error:", error);
         setStatus("error");
         setMessage(
           `Authentication failed: ${

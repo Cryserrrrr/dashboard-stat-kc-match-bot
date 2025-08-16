@@ -28,11 +28,10 @@ try {
   });
 
   redisClient.on("error", (err: any) => {
-    console.error("Redis Client Error:", err);
+    // Redis error handled silently
   });
 
   redisClient.connect().catch((err: any) => {
-    console.error("Failed to connect to Redis:", err);
     redisClient = null;
   });
 
@@ -41,7 +40,6 @@ try {
     prefix: "dashboard:",
   });
 } catch (error) {
-  console.error("Redis setup failed:", error);
   redisClient = null;
   redisStore = null;
 }
@@ -56,11 +54,10 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, "../../dist")));
 
-// Session configuration with better production handling
 const sessionConfig = {
-  store: redisStore || undefined, // Use memory store if Redis is not available
+  store: redisStore || undefined,
   secret: process.env.JWT_SECRET || "fallback-secret",
-  resave: true, // Force resave to ensure session is saved
+  resave: true,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === "production",
@@ -73,14 +70,6 @@ const sessionConfig = {
   },
   name: "dashboard_session",
 };
-
-console.log("Session configuration:", {
-  store: redisStore ? "Redis" : "Memory",
-  redisAvailable: !!redisClient,
-  nodeEnv: process.env.NODE_ENV,
-  secure: sessionConfig.cookie.secure,
-  sameSite: sessionConfig.cookie.sameSite,
-});
 
 app.use(session(sessionConfig));
 
@@ -109,14 +98,12 @@ app.get("/api/debug/test-session", (req, res) => {
 
   req.session.save((err) => {
     if (err) {
-      console.error("Error saving test session:", err);
       return res.json({
         error: "Failed to save session",
         details: err.message,
       });
     }
 
-    console.log("Test session saved:", (req.session as any).testData);
     return res.json({
       success: true,
       testData: (req.session as any).testData,
@@ -242,7 +229,6 @@ app.get("/api/stats", async (_req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching stats:", error);
     return res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
@@ -254,7 +240,6 @@ app.get("/api/servers", async (_req, res) => {
     });
     return res.json(servers);
   } catch (error) {
-    console.error("Error fetching servers:", error);
     return res.status(500).json({ error: "Failed to fetch servers" });
   }
 });
@@ -286,7 +271,6 @@ app.get("/api/matches", async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Error fetching matches:", error);
     return res.status(500).json({ error: "Failed to fetch matches" });
   }
 });
@@ -317,7 +301,6 @@ app.get("/api/command-stats", async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Error fetching command stats:", error);
     return res.status(500).json({ error: "Failed to fetch command stats" });
   }
 });
@@ -349,7 +332,6 @@ app.get("/api/tickets", async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Error fetching tickets:", error);
     return res.status(500).json({ error: "Failed to fetch tickets" });
   }
 });
@@ -361,7 +343,6 @@ app.get("/api/team-popularity", async (_req, res) => {
     });
     return res.json(teamPopularity);
   } catch (error) {
-    console.error("Error fetching team popularity:", error);
     return res.status(500).json({ error: "Failed to fetch team popularity" });
   }
 });
@@ -400,7 +381,6 @@ app.get("/api/performance-metrics", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching performance metrics:", error);
     return res
       .status(500)
       .json({ error: "Failed to fetch performance metrics" });
@@ -420,7 +400,6 @@ app.post("/api/auth/callback", async (req, res) => {
     const redirectUri = process.env.DISCORD_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
-      console.error("Missing Discord OAuth configuration");
       return res.status(500).json({ error: "Server configuration error" });
     }
 
@@ -439,10 +418,6 @@ app.post("/api/auth/callback", async (req, res) => {
     });
 
     if (!tokenResponse.ok) {
-      console.error(
-        "Failed to exchange code for token:",
-        await tokenResponse.text()
-      );
       return res
         .status(400)
         .json({ error: "Failed to authenticate with Discord" });
@@ -502,25 +477,21 @@ app.post("/api/auth/callback", async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error("Authentication error:", error);
     return res.status(500).json({ error: "Authentication failed" });
   }
 });
 
 app.get("/auth/callback", async (req, res) => {
+  console.log("Callback received");
   try {
     const { code, error } = req.query;
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
-    console.log("Auth callback received:", { code, error, baseUrl });
-
     if (error) {
-      console.log("Redirecting with error:", error);
       return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
     }
 
     if (!code) {
-      console.log("No code received, redirecting with error");
       return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
     }
 
@@ -529,12 +500,6 @@ app.get("/auth/callback", async (req, res) => {
     const redirectUri = process.env.DISCORD_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
-      console.error("Missing Discord OAuth configuration");
-      console.log("Config check:", {
-        clientId: !!clientId,
-        clientSecret: !!clientSecret,
-        redirectUri,
-      });
       return res.redirect(`${baseUrl}/auth/callback?error=config_error`);
     }
 
@@ -553,10 +518,6 @@ app.get("/auth/callback", async (req, res) => {
     });
 
     if (!tokenResponse.ok) {
-      console.error(
-        "Failed to exchange code for token:",
-        await tokenResponse.text()
-      );
       return res.redirect(
         `${baseUrl}/auth/callback?error=token_exchange_failed`
       );
@@ -592,52 +553,35 @@ app.get("/auth/callback", async (req, res) => {
       avatar: userData.avatar,
     };
 
-    console.log("Session created with user:", (req.session as any).user);
-    console.log("Session ID:", req.sessionID);
-
     // Force session save and wait for completion
     await new Promise<void>((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
-          console.error("Error saving session:", err);
           reject(err);
         } else {
-          console.log("Session saved successfully");
           resolve();
         }
       });
     });
 
-    console.log("Authentication successful, redirecting to:", `${baseUrl}/`);
     return res.redirect(`${baseUrl}/`);
   } catch (error) {
-    console.error("Authentication error:", error);
+    console.log("Error in callback", error);
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    console.log(
-      "Authentication failed, redirecting to:",
-      `${baseUrl}/auth/callback?error=auth_failed`
-    );
     return res.redirect(`${baseUrl}/auth/callback?error=auth_failed`);
   }
 });
 
 app.get("/api/auth/me", (req, res) => {
   try {
-    console.log("Session ID:", req.sessionID);
-    console.log("Session data:", req.session);
-    console.log("User in session:", (req.session as any).user);
-
     const user = (req.session as any).user;
 
     if (!user) {
-      console.log("No user found in session");
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    console.log("User authenticated:", user);
     return res.json(user);
   } catch (error) {
-    console.error("Error fetching user:", error);
     return res.status(500).json({ error: "Failed to fetch user" });
   }
 });
@@ -646,14 +590,12 @@ app.post("/api/auth/logout", (req, res) => {
   try {
     req.session.destroy((err) => {
       if (err) {
-        console.error("Error destroying session:", err);
         return res.status(500).json({ error: "Failed to logout" });
       }
       return res.json({ success: true });
     });
     return;
   } catch (error) {
-    console.error("Logout error:", error);
     return res.status(500).json({ error: "Failed to logout" });
   }
 });
@@ -666,5 +608,5 @@ app.get("*", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  // Server started
 });
