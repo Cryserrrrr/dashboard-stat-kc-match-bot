@@ -3,6 +3,8 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import session from "express-session";
+import { RedisStore } from "connect-redis";
+import { createClient } from "redis";
 import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -16,6 +18,22 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
+// Redis client setup
+const redisClient = createClient({
+  url: process.env.REDIS_URL || "redis://localhost:6379",
+});
+
+redisClient.on("error", (err) => {
+  console.error("Redis Client Error:", err);
+});
+
+redisClient.connect().catch(console.error);
+
+const redisStore = new RedisStore({
+  client: redisClient,
+  prefix: "dashboard:",
+});
+
 app.use(
   cors({
     origin: process.env.BASE_URL || "http://localhost:3000",
@@ -24,17 +42,16 @@ app.use(
 );
 app.use(express.json());
 
-// Serve static files from the React app
 app.use(express.static(path.join(__dirname, "../../dist")));
 
-// Session configuration
 app.use(
   session({
+    store: redisStore,
     secret: process.env.JWT_SECRET || "fallback-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // Set to true in production with HTTPS
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "lax",

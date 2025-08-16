@@ -51,6 +51,9 @@ BASE_URL="http://localhost:3000"
 # Security
 JWT_SECRET="YOUR_JWT_SECRET"
 AUTHORIZED_USER_IDS="YOUR_USER_ID"
+
+# Redis (for session store)
+REDIS_URL="redis://localhost:6379"
 ```
 
 ### User Authorization
