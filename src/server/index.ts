@@ -27,11 +27,9 @@ try {
     url: process.env.REDIS_URL || "redis://localhost:6379",
   });
 
-  redisClient.on("error", (err: any) => {
-    // Redis error handled silently
-  });
+  redisClient.on("error", () => {});
 
-  redisClient.connect().catch((err: any) => {
+  redisClient.connect().catch(() => {
     redisClient = null;
   });
 

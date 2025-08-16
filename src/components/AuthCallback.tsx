@@ -63,11 +63,8 @@ export function AuthCallback() {
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
           throw new Error(`Failed to authenticate: ${response.status}`);
         }
-
-        const result = await response.json();
 
         await checkAuth();
         setStatus("success");
