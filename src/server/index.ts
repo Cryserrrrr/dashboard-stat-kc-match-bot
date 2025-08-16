@@ -480,7 +480,6 @@ app.post("/api/auth/callback", async (req, res) => {
 });
 
 app.get("/auth/callback", async (req, res) => {
-  console.log("Callback received");
   try {
     const { code, error } = req.query;
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -562,9 +561,8 @@ app.get("/auth/callback", async (req, res) => {
       });
     });
 
-    return res.redirect(`${baseUrl}/`);
+    return res.redirect(`${baseUrl}/auth/callback?success=true`);
   } catch (error) {
-    console.log("Error in callback", error);
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     return res.redirect(`${baseUrl}/auth/callback?error=auth_failed`);
   }
