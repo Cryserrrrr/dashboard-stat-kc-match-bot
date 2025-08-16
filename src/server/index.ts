@@ -358,7 +358,7 @@ app.post("/api/auth/callback", async (req, res) => {
         .json({ error: "Failed to authenticate with Discord" });
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = (await tokenResponse.json()) as any;
 
     const userResponse = await fetch("https://discord.com/api/users/@me", {
       headers: {
@@ -372,7 +372,7 @@ app.post("/api/auth/callback", async (req, res) => {
         .json({ error: "Failed to fetch user information" });
     }
 
-    const userData = await userResponse.json();
+    const userData = (await userResponse.json()) as any;
 
     const authorizedUserIds =
       process.env.AUTHORIZED_USER_IDS?.split(",").map((id) => id.trim()) || [];
@@ -464,7 +464,7 @@ app.get("/auth/callback", async (req, res) => {
       );
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = (await tokenResponse.json()) as any;
 
     const userResponse = await fetch("https://discord.com/api/users/@me", {
       headers: {
@@ -478,7 +478,7 @@ app.get("/auth/callback", async (req, res) => {
       );
     }
 
-    const userData = await userResponse.json();
+    const userData = (await userResponse.json()) as any;
 
     const authorizedUserIds =
       process.env.AUTHORIZED_USER_IDS?.split(",").map((id) => id.trim()) || [];
@@ -525,10 +525,10 @@ app.get("/api/auth/me", (req, res) => {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    res.json(user);
+    return res.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
-    res.status(500).json({ error: "Failed to fetch user" });
+    return res.status(500).json({ error: "Failed to fetch user" });
   }
 });
 
@@ -539,11 +539,11 @@ app.post("/api/auth/logout", (req, res) => {
         console.error("Error destroying session:", err);
         return res.status(500).json({ error: "Failed to logout" });
       }
-      res.json({ success: true });
+      return res.json({ success: true });
     });
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).json({ error: "Failed to logout" });
+    return res.status(500).json({ error: "Failed to logout" });
   }
 });
 
