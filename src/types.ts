@@ -48,6 +48,7 @@ export interface Ticket {
   type: "BUG" | "IMPROVEMENT";
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
   description?: string;
+  answer?: string;
   createdAt: string;
   updatedAt: string;
 }

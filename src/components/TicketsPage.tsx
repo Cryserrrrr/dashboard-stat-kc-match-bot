@@ -11,14 +11,9 @@ import {
   Hash,
   X,
   Send,
+  Trash2,
+  Pencil,
 } from "lucide-react";
-
-interface TicketResponse {
-  id: string;
-  ticketId: string;
-  response: string;
-  createdAt: string;
-}
 
 export function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -34,8 +29,9 @@ export function TicketsPage() {
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
   const [responseLoading, setResponseLoading] = useState(false);
+  const [deleteResponseLoading, setDeleteResponseLoading] = useState(false);
   const [newResponse, setNewResponse] = useState("");
-  const [ticketResponses, setTicketResponses] = useState<TicketResponse[]>([]);
+  const [isEditingResponse, setIsEditingResponse] = useState(false);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -124,8 +120,7 @@ export function TicketsPage() {
       setSelectedTicket(ticket);
       setShowTicketModal(true);
       setNewResponse("");
-      // In a real implementation, you would fetch ticket responses here
-      setTicketResponses([]);
+      setIsEditingResponse(false);
     } catch (err) {
       console.error("Error opening ticket:", err);
     }
@@ -157,17 +152,28 @@ export function TicketsPage() {
 
     try {
       setResponseLoading(true);
-      await api.addTicketResponse(selectedTicket.id, newResponse);
+      console.log("Sending response for ticket:", selectedTicket.id);
 
-      const newTicketResponse: TicketResponse = {
-        id: Date.now().toString(),
-        ticketId: selectedTicket.id,
-        response: newResponse,
-        createdAt: new Date().toISOString(),
-      };
+      const result = await api.addTicketResponse(
+        selectedTicket.id,
+        newResponse
+      );
 
-      setTicketResponses((prev) => [...prev, newTicketResponse]);
+      console.log("API response:", result);
+
+      if (result.ticket) {
+        setSelectedTicket(result.ticket);
+        setTickets((prevTickets) =>
+          prevTickets.map((ticket) =>
+            ticket.id === selectedTicket.id ? result.ticket : ticket
+          )
+        );
+      } else {
+        console.log("No ticket returned from API");
+      }
+
       setNewResponse("");
+      setIsEditingResponse(false);
     } catch (err) {
       console.error("Error sending response:", err);
     } finally {
@@ -175,11 +181,39 @@ export function TicketsPage() {
     }
   };
 
+  const handleDeleteResponse = async () => {
+    if (!selectedTicket) return;
+
+    try {
+      setDeleteResponseLoading(true);
+      console.log("Deleting response for ticket:", selectedTicket.id);
+
+      const result = await api.deleteTicketResponse(selectedTicket.id);
+
+      console.log("API response:", result);
+
+      if (result.ticket) {
+        setSelectedTicket(result.ticket);
+        setTickets((prevTickets) =>
+          prevTickets.map((ticket) =>
+            ticket.id === selectedTicket.id ? result.ticket : ticket
+          )
+        );
+      } else {
+        console.log("No ticket returned from API");
+      }
+    } catch (err) {
+      console.error("Error deleting response:", err);
+    } finally {
+      setDeleteResponseLoading(false);
+    }
+  };
+
   const closeTicketModal = () => {
     setShowTicketModal(false);
     setSelectedTicket(null);
-    setTicketResponses([]);
     setNewResponse("");
+    setIsEditingResponse(false);
   };
 
   if (loading) {
@@ -516,57 +550,90 @@ export function TicketsPage() {
               </div>
             </div>
 
-            {/* Responses */}
+            {/* Response */}
             <div className="mb-4">
               <h4 className="text-sm font-medium text-gray-700 mb-2">
-                Responses
+                Response
               </h4>
-              <div className="max-h-40 overflow-y-auto space-y-2">
-                {ticketResponses.length === 0 ? (
-                  <p className="text-sm text-gray-500">No responses yet</p>
-                ) : (
-                  ticketResponses.map((response) => (
-                    <div
-                      key={response.id}
-                      className="bg-blue-50 p-3 rounded-md"
+              {selectedTicket.answer &&
+              selectedTicket.answer.trim() !== "" &&
+              !isEditingResponse ? (
+                <div className="space-y-2">
+                  <div className="bg-green-50 p-3 rounded-md border-l-4 border-green-400">
+                    <p className="text-sm text-gray-900">
+                      {selectedTicket.answer}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Official Response
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setIsEditingResponse(true);
+                        setNewResponse(selectedTicket.answer || "");
+                      }}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
                     >
-                      <p className="text-sm text-gray-900">
-                        {response.response}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatDate(response.createdAt)}
-                      </p>
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Edit Response
+                    </button>
+                    <button
+                      onClick={handleDeleteResponse}
+                      disabled={deleteResponseLoading}
+                      className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {deleteResponseLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete Response
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
+                    <textarea
+                      value={newResponse}
+                      onChange={(e) => setNewResponse(e.target.value)}
+                      placeholder="Type your response..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      rows={3}
+                    />
+                    <div className="flex flex-col space-y-2">
+                      <button
+                        onClick={handleSendResponse}
+                        disabled={!newResponse.trim() || responseLoading}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                      >
+                        {responseLoading ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </button>
+                      {isEditingResponse && (
+                        <button
+                          onClick={() => {
+                            setIsEditingResponse(false);
+                            setNewResponse("");
+                          }}
+                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Add Response */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Add Response
-              </label>
-              <div className="flex space-x-2">
-                <textarea
-                  value={newResponse}
-                  onChange={(e) => setNewResponse(e.target.value)}
-                  placeholder="Type your response..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  rows={3}
-                />
-                <button
-                  onClick={handleSendResponse}
-                  disabled={!newResponse.trim() || responseLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  {responseLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
+                  </div>
+                </div>
+              )}
+              {!selectedTicket.answer && !isEditingResponse && (
+                <p className="text-sm text-gray-500">No response yet</p>
+              )}
             </div>
 
             <div className="flex justify-end">

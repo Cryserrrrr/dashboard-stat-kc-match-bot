@@ -45,13 +45,10 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "../../dist")));
 
 const requireAuth = (req: any, res: any, next: any): void => {
-  console.log("🔒 RequireAuth middleware");
-
   const token =
     req.cookies.token || req.headers.authorization?.replace("Bearer ", "");
 
   if (!token) {
-    console.log("❌ No token found");
     res.status(401).json({ error: "Authentication required" });
     return;
   }
@@ -62,10 +59,8 @@ const requireAuth = (req: any, res: any, next: any): void => {
       process.env.JWT_SECRET || "fallback-secret"
     ) as any;
     req.user = decoded;
-    console.log("✅ User authenticated:", decoded.username);
     next();
   } catch (error) {
-    console.log("❌ Invalid token");
     res.status(401).json({ error: "Invalid token" });
   }
 };
@@ -492,21 +487,15 @@ app.post("/api/auth/callback", async (req, res) => {
 });
 
 app.get("/auth/callback", async (req, res) => {
-  console.log("🔐 Auth callback started");
-
   try {
     const { code, error } = req.query;
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
-    console.log("🔐 Query params:", { code: !!code, error });
-
     if (error) {
-      console.log("❌ Auth error:", error);
       return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
     }
 
     if (!code) {
-      console.log("❌ No authorization code");
       return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
     }
 
@@ -562,11 +551,6 @@ app.get("/auth/callback", async (req, res) => {
       return res.redirect(`${baseUrl}/auth/callback?error=unauthorized`);
     }
 
-    console.log("✅ User authenticated:", {
-      id: userData.id,
-      username: userData.username,
-    });
-
     const token = jwt.sign(
       {
         id: userData.id,
@@ -586,7 +570,6 @@ app.get("/auth/callback", async (req, res) => {
       path: "/",
     });
 
-    console.log("🔄 Redirecting to:", `${baseUrl}/`);
     return res.redirect(`${baseUrl}/`);
   } catch (error) {
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -595,13 +578,9 @@ app.get("/auth/callback", async (req, res) => {
 });
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
-  console.log("🔍 Auth/me request");
-  console.log("🔍 User:", req.user);
-
   try {
     return res.json(req.user);
   } catch (error) {
-    console.error("❌ Auth/me error:", error);
     return res.status(500).json({ error: "Failed to fetch user" });
   }
 });
@@ -669,11 +648,66 @@ app.patch("/api/tickets/:ticketId/status", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/tickets/:ticketId/respond", requireAuth, async (_req, res) => {
+app.post("/api/tickets/:ticketId/respond", requireAuth, async (req, res) => {
   try {
-    return res.json({ success: true, message: "Response added successfully" });
+    const ticketId = req.params.ticketId;
+    const { answer } = req.body;
+    if (!answer || answer.trim() === "") {
+      return res.status(400).json({ error: "Answer is required" });
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    console.log(answer, ticket);
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        answer: answer.trim(),
+      } as any,
+    });
+
+    return res.json({
+      success: true,
+      message: "Response added successfully",
+      ticket: updatedTicket,
+    });
   } catch (error) {
     return res.status(500).json({ error: "Failed to add ticket response" });
+  }
+});
+
+app.delete("/api/tickets/:ticketId/respond", requireAuth, async (req, res) => {
+  try {
+    const ticketId = req.params.ticketId;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        answer: null,
+      } as any,
+    });
+
+    return res.json({
+      success: true,
+      message: "Response deleted successfully",
+      ticket: updatedTicket,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete ticket response" });
   }
 });
 
@@ -688,5 +722,4 @@ app.listen(PORT, () => {
   console.log("🚀 Server started on port", PORT);
   console.log("🌍 Environment:", process.env.NODE_ENV || "development");
   console.log("🔧 Base URL:", process.env.BASE_URL || "http://localhost:3000");
-  // Removed Redis and session logs as they are no longer used.
 });

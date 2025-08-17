@@ -132,10 +132,23 @@ export const api = {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ response }),
+      body: JSON.stringify({ answer: response }),
     });
     if (!apiResponse.ok) {
       throw new Error("Failed to add ticket response");
+    }
+    return apiResponse.json();
+  },
+
+  async deleteTicketResponse(ticketId: string): Promise<any> {
+    const apiResponse = await fetch(`${API_BASE}/tickets/${ticketId}/respond`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!apiResponse.ok) {
+      throw new Error("Failed to delete ticket response");
     }
     return apiResponse.json();
   },
