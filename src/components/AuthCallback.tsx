@@ -82,6 +82,10 @@ export function AuthCallback() {
     }
   };
 
+  const isUnauthorizedError = (error: string) => {
+    return error === "unauthorized";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="max-w-md w-full space-y-8">
@@ -117,15 +121,26 @@ export function AuthCallback() {
                   <XCircle className="h-8 w-8 text-red-600" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Authentication Failed
+                  {isUnauthorizedError(
+                    new URLSearchParams(window.location.search).get("error") ||
+                      ""
+                  )
+                    ? "Access Denied"
+                    : "Authentication Failed"}
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">{message}</p>
-                <button
-                  onClick={() => (window.location.href = "/")}
-                  className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Try Again
-                </button>
+                {isUnauthorizedError(
+                  new URLSearchParams(window.location.search).get("error") || ""
+                ) ? (
+                  <div></div>
+                ) : (
+                  <button
+                    onClick={() => (window.location.href = "/")}
+                    className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Try Again
+                  </button>
+                )}
               </>
             )}
           </div>

@@ -161,11 +161,11 @@ export function MatchesPage() {
               className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All Status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="pre-announced">Pre-announced</option>
-              <option value="live">Live</option>
+              <option value="not_started">Not Started</option>
+              <option value="running">Running</option>
               <option value="finished">Finished</option>
               <option value="announced">Announced</option>
+              <option value="canceled">Canceled</option>
             </select>
 
             {/* KC Team Filter */}
@@ -175,13 +175,13 @@ export function MatchesPage() {
               className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All KC Teams</option>
-              <option value="KC">KC (LEC)</option>
-              <option value="KCB">KCB (LFL)</option>
-              <option value="KCBS">KCBS (LFL2)</option>
-              <option value="KC Valorant">KC Valorant</option>
-              <option value="KCGC Valorant">KCGC Valorant</option>
-              <option value="KCBS Valorant">KCBS Valorant</option>
-              <option value="KC Rocket League">KC Rocket League</option>
+              <option value="134078">KC (LEC)</option>
+              <option value="128268">KCB (LFL)</option>
+              <option value="136080">KCBS (LFL2)</option>
+              <option value="130922">KC Valorant</option>
+              <option value="132777">KCGC Valorant</option>
+              <option value="136165">KCBS Valorant</option>
+              <option value="129570">KC Rocket League</option>
             </select>
 
             {/* Results per page */}

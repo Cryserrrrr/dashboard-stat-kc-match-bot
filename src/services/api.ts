@@ -175,4 +175,50 @@ export const api = {
       throw new Error("Failed to logout");
     }
   },
+
+  async getChangelogs(): Promise<any[]> {
+    const response = await fetch(`${API_BASE}/changelogs`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch changelogs");
+    }
+    return response.json();
+  },
+
+  async createChangelog(text: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/changelogs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to create changelog");
+    }
+    return response.json();
+  },
+
+  async updateChangelog(id: string, text: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/changelogs/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to update changelog");
+    }
+    return response.json();
+  },
+
+  async deleteChangelog(id: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/changelogs/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to delete changelog");
+    }
+    return response.json();
+  },
 };

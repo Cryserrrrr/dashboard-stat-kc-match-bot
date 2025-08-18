@@ -7,7 +7,9 @@ import { MatchesPage } from "./components/MatchesPage";
 import { CommandsPage } from "./components/CommandsPage";
 import { TicketsPage } from "./components/TicketsPage";
 import { UsersPage } from "./components/UsersPage";
+import { ChangelogPage } from "./components/ChangelogPage";
 import { AuthCallback } from "./components/AuthCallback";
+import { InviteRedirect } from "./components/InviteRedirect";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
@@ -17,6 +19,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/invite" element={<InviteRedirect />} />
           <Route
             path="/*"
             element={
@@ -48,6 +51,8 @@ function AppContent() {
         return <TicketsPage />;
       case "users":
         return <UsersPage />;
+      case "changelog":
+        return <ChangelogPage />;
       default:
         return <Dashboard />;
     }

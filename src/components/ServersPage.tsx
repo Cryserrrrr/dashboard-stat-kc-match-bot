@@ -3,6 +3,7 @@ import { api } from "../services/api";
 import { GuildSettings } from "../types";
 import { TeamsSection } from "./TeamsPage";
 import { Users, Calendar, Hash, Bell, Target } from "lucide-react";
+import { getTeamName } from "../utils/teams";
 
 export function ServersPage() {
   const [servers, setServers] = useState<GuildSettings[]>([]);
@@ -193,7 +194,7 @@ export function ServersPage() {
                                     key={teamId}
                                     className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
                                   >
-                                    {teamId}
+                                    {getTeamName(teamId)}
                                   </span>
                                 ))}
                               {server.filteredTeams.length > 2 && (

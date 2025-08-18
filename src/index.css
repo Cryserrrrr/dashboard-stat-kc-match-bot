@@ -15,3 +15,123 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+/* Discord Markdown Styles */
+.discord-md {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  line-height: 1.4;
+  color: #dcddde;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.discord-md strong {
+  font-weight: 600;
+}
+
+.discord-md em {
+  font-style: italic;
+}
+
+.discord-md u {
+  text-decoration: underline;
+}
+
+.discord-md s {
+  text-decoration: line-through;
+}
+
+.discord-md code {
+  background-color: #2f3136;
+  color: #dcddde;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.875em;
+  font-family: "Consolas", "Andale Mono", "Monaco", "Lucida Console",
+    "Liberation Mono", "DejaVu Sans Mono", "Bitstream Vera Sans Mono",
+    "Courier New", monospace;
+}
+
+.discord-md pre {
+  background-color: #2f3136;
+  color: #dcddde;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+  border: 1px solid #40444b;
+}
+
+.discord-md pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.875em;
+}
+
+.discord-md blockquote {
+  border-left: 4px solid #4f545c;
+  padding-left: 16px;
+  margin: 8px 0;
+  font-style: italic;
+  color: #b9bbbe;
+}
+
+.discord-md ul,
+.discord-md ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.discord-md li {
+  margin: 2px 0;
+}
+
+.discord-md ul {
+  list-style-type: disc;
+}
+
+.discord-md ol {
+  list-style-type: decimal;
+}
+
+.discord-md .spoiler {
+  background-color: #2f3136;
+  color: #2f3136;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.discord-md .spoiler:hover {
+  background-color: #40444b;
+}
+
+.discord-md .spoiler.revealed {
+  background-color: #40444b;
+  color: #dcddde;
+}
+
+.discord-md .mention {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #7289da;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.discord-md .mention:hover {
+  background-color: rgba(88, 101, 242, 0.4);
+}
+
+.discord-md .timestamp {
+  background-color: rgba(79, 84, 92, 0.3);
+  color: #b9bbbe;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.875em;
+}

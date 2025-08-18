@@ -254,7 +254,7 @@ app.get("/api/matches", requireAuth, async (req, res) => {
 
     const where: any = {};
     if (req.query.status) where.status = req.query.status;
-    if (req.query.kcTeam) where.kcTeam = req.query.kcTeam;
+    if (req.query.kcTeam) where.kcId = req.query.kcTeam;
 
     const [matches, total] = await Promise.all([
       prisma.match.findMany({
@@ -708,6 +708,67 @@ app.delete("/api/tickets/:ticketId/respond", requireAuth, async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: "Failed to delete ticket response" });
+  }
+});
+
+// Changelog routes
+app.get("/api/changelogs", requireAuth, async (_req, res) => {
+  try {
+    const changelogs =
+      await prisma.$queryRaw`SELECT * FROM change_logs ORDER BY "createdAt" DESC`;
+    return res.json(changelogs);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch changelogs" });
+  }
+});
+
+app.post("/api/changelogs", requireAuth, async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || text.trim() === "") {
+      return res.status(400).json({ error: "Changelog text is required" });
+    }
+
+    await prisma.$executeRaw`INSERT INTO change_logs (id, text, status, "createdAt") VALUES (gen_random_uuid(), ${text.trim()}, 'new', NOW())`;
+    const newChangelog =
+      await prisma.$queryRaw`SELECT * FROM change_logs WHERE text = ${text.trim()} ORDER BY "createdAt" DESC LIMIT 1`;
+    return res.json((newChangelog as any[])[0]);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to create changelog" });
+  }
+});
+
+app.put("/api/changelogs/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text || text.trim() === "") {
+      return res.status(400).json({ error: "Changelog text is required" });
+    }
+
+    await prisma.$executeRaw`UPDATE change_logs SET text = ${text.trim()} WHERE id = ${id}`;
+    const updatedChangelog =
+      await prisma.$queryRaw`SELECT * FROM change_logs WHERE id = ${id}`;
+    return res.json((updatedChangelog as any[])[0]);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update changelog" });
+  }
+});
+
+app.delete("/api/changelogs/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.$executeRaw`DELETE FROM change_logs WHERE id = ${id}`;
+
+    return res.json({
+      success: true,
+      message: "Changelog deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete changelog" });
   }
 });
 
