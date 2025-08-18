@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 export function AuthCallback() {
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading"
-  );
+  const [status, setStatus] = useState<"loading" | "success">("loading");
   const [message, setMessage] = useState("");
   const { checkAuth } = useAuth();
 
@@ -13,17 +11,9 @@ export function AuthCallback() {
     const handleCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get("code");
-      const error = urlParams.get("error");
-
-      if (error) {
-        setStatus("error");
-        setMessage(getErrorMessage(error));
-        return;
-      }
 
       if (!code) {
-        setStatus("error");
-        setMessage("No authorization code received.");
+        window.location.href = "/error?error=no_code";
         return;
       }
 
@@ -38,7 +28,8 @@ export function AuthCallback() {
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to authenticate: ${response.status}`);
+          window.location.href = "/error?error=auth_failed";
+          return;
         }
 
         await checkAuth();
@@ -49,42 +40,12 @@ export function AuthCallback() {
           window.location.href = "/";
         }, 1500);
       } catch (error) {
-        setStatus("error");
-        setMessage(
-          `Authentication failed: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
+        window.location.href = "/error?error=auth_failed";
       }
     };
 
     handleCallback();
   }, [checkAuth]);
-
-  const getErrorMessage = (error: string) => {
-    switch (error) {
-      case "no_code":
-        return "No authorization code received.";
-      case "config_error":
-        return "Server configuration error.";
-      case "token_exchange_failed":
-        return "Failed to authenticate with Discord.";
-      case "user_fetch_failed":
-        return "Failed to fetch user information.";
-      case "unauthorized":
-        return "Access denied. You are not authorized to access this dashboard.";
-      case "auth_failed":
-        return "Authentication failed. Please try again.";
-      case "code_already_used":
-        return "Authorization code already used. Please try logging in again.";
-      default:
-        return "Authentication failed. Please try again.";
-    }
-  };
-
-  const isUnauthorizedError = (error: string) => {
-    return error === "unauthorized";
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -112,35 +73,6 @@ export function AuthCallback() {
                   Success!
                 </h3>
                 <p className="text-sm text-gray-500">{message}</p>
-              </>
-            )}
-
-            {status === "error" && (
-              <>
-                <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                  <XCircle className="h-8 w-8 text-red-600" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {isUnauthorizedError(
-                    new URLSearchParams(window.location.search).get("error") ||
-                      ""
-                  )
-                    ? "Access Denied"
-                    : "Authentication Failed"}
-                </h3>
-                <p className="text-sm text-gray-500 mb-4">{message}</p>
-                {isUnauthorizedError(
-                  new URLSearchParams(window.location.search).get("error") || ""
-                ) ? (
-                  <div></div>
-                ) : (
-                  <button
-                    onClick={() => (window.location.href = "/")}
-                    className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Try Again
-                  </button>
-                )}
               </>
             )}
           </div>

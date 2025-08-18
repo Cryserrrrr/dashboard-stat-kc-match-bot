@@ -492,11 +492,11 @@ app.get("/auth/callback", async (req, res) => {
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
     if (error) {
-      return res.redirect(`${baseUrl}/auth/callback?error=${error}`);
+      return res.redirect(`${baseUrl}/error?error=${error}`);
     }
 
     if (!code) {
-      return res.redirect(`${baseUrl}/auth/callback?error=no_code`);
+      return res.redirect(`${baseUrl}/error?error=no_code`);
     }
 
     const clientId = process.env.DISCORD_CLIENT_ID;
@@ -504,7 +504,7 @@ app.get("/auth/callback", async (req, res) => {
     const redirectUri = process.env.DISCORD_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
-      return res.redirect(`${baseUrl}/auth/callback?error=config_error`);
+      return res.redirect(`${baseUrl}/error?error=config_error`);
     }
 
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
@@ -522,9 +522,7 @@ app.get("/auth/callback", async (req, res) => {
     });
 
     if (!tokenResponse.ok) {
-      return res.redirect(
-        `${baseUrl}/auth/callback?error=token_exchange_failed`
-      );
+      return res.redirect(`${baseUrl}/error?error=token_exchange_failed`);
     }
 
     const tokenData = (await tokenResponse.json()) as any;
@@ -536,7 +534,7 @@ app.get("/auth/callback", async (req, res) => {
     });
 
     if (!userResponse.ok) {
-      return res.redirect(`${baseUrl}/auth/callback?error=user_fetch_failed`);
+      return res.redirect(`${baseUrl}/error?error=user_fetch_failed`);
     }
 
     const userData = (await userResponse.json()) as any;
@@ -548,7 +546,7 @@ app.get("/auth/callback", async (req, res) => {
       authorizedUserIds.length > 0 &&
       !authorizedUserIds.includes(userData.id)
     ) {
-      return res.redirect(`${baseUrl}/auth/callback?error=unauthorized`);
+      return res.redirect(`${baseUrl}/error?error=unauthorized`);
     }
 
     const token = jwt.sign(
@@ -573,7 +571,7 @@ app.get("/auth/callback", async (req, res) => {
     return res.redirect(`${baseUrl}/`);
   } catch (error) {
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    return res.redirect(`${baseUrl}/auth/callback?error=auth_failed`);
+    return res.redirect(`${baseUrl}/error?error=auth_failed`);
   }
 });
 

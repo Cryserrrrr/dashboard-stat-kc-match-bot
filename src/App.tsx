@@ -9,6 +9,7 @@ import { TicketsPage } from "./components/TicketsPage";
 import { UsersPage } from "./components/UsersPage";
 import { ChangelogPage } from "./components/ChangelogPage";
 import { AuthCallback } from "./components/AuthCallback";
+import { ErrorPage } from "./components/ErrorPage";
 import { InviteRedirect } from "./components/InviteRedirect";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -19,6 +20,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/error" element={<ErrorPage />} />
           <Route path="/invite" element={<InviteRedirect />} />
           <Route
             path="/*"
