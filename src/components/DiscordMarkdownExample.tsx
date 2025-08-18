@@ -1,5 +1,4 @@
-import React from 'react';
-import { DiscordMarkdownRenderer } from './DiscordMarkdownRenderer';
+import { DiscordMarkdownRenderer } from "./DiscordMarkdownRenderer";
 
 export function DiscordMarkdownExample() {
   // Example Discord markdown content
@@ -62,16 +61,16 @@ bot.on('message', (msg) => {
   const mockResolvers = {
     resolveUser: (id: string) => ({
       username: `User${id.slice(-3)}`,
-      avatar: undefined
+      avatar: undefined,
     }),
     resolveRole: (id: string) => ({
       name: `Moderator${id.slice(-3)}`,
-      color: '#7289da'
+      color: "#7289da",
     }),
     resolveChannel: (id: string) => ({
       name: `general-${id.slice(-3)}`,
-      type: 'text'
-    })
+      type: "text",
+    }),
   };
 
   return (
@@ -81,22 +80,27 @@ bot.on('message', (msg) => {
           Discord Markdown Renderer Example
         </h1>
         <p className="text-gray-600">
-          This example shows how the DiscordMarkdownRenderer component handles various Discord markdown features.
+          This example shows how the DiscordMarkdownRenderer component handles
+          various Discord markdown features.
         </p>
       </div>
 
       <div className="bg-gray-900 rounded-lg p-6 shadow-lg">
-        <DiscordMarkdownRenderer
-          content={exampleContent}
-          {...mockResolvers}
-        />
+        <DiscordMarkdownRenderer content={exampleContent} {...mockResolvers} />
       </div>
 
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h3 className="font-semibold text-blue-900 mb-2">Features Demonstrated:</h3>
+        <h3 className="font-semibold text-blue-900 mb-2">
+          Features Demonstrated:
+        </h3>
         <ul className="text-blue-800 text-sm space-y-1">
-          <li>• <strong>Bold</strong>, <em>italic</em>, <u>underlined</u>, and <s>strikethrough</s> text</li>
-          <li>• Inline <code>code</code> and code blocks with syntax highlighting</li>
+          <li>
+            • <strong>Bold</strong>, <em>italic</em>, <u>underlined</u>, and{" "}
+            <s>strikethrough</s> text
+          </li>
+          <li>
+            • Inline <code>code</code> and code blocks with syntax highlighting
+          </li>
           <li>• Quote blocks (single and nested)</li>
           <li>• Numbered and bulleted lists</li>
           <li>• Spoilers (click to reveal)</li>
