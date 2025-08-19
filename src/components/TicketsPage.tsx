@@ -218,42 +218,46 @@ export function TicketsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-brand-dark">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-light"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600">{error}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-brand-dark">
+        <div className="text-center animate-fade-in">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Error
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-brand-dark transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Support Tickets</h1>
-          <p className="text-gray-600 mt-2">
+        <div className="mb-8 animate-slide-down">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Support Tickets
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
             Manage user support requests and bug reports
           </p>
         </div>
 
         {/* Stats Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white dark:bg-brand-card rounded-lg shadow-sm border border-gray-200 dark:border-0 p-6 mb-6 animate-fade-in">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Total Tickets
               </h3>
-              <p className="text-3xl font-bold text-blue-600">
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {totalTickets.toLocaleString()}
               </p>
             </div>
@@ -264,12 +268,12 @@ export function TicketsPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white dark:bg-brand-card rounded-lg shadow-sm border border-gray-200 dark:border-0 p-6 mb-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label
                 htmlFor="search"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
                 Search Tickets
               </label>
@@ -279,13 +283,13 @@ export function TicketsPage() {
                 placeholder="Search by username or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-brand-card text-gray-900 dark:text-white"
               />
             </div>
             <div className="sm:w-48">
               <label
                 htmlFor="status"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
                 Status Filter
               </label>
@@ -293,7 +297,7 @@ export function TicketsPage() {
                 id="status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-brand-card text-gray-900 dark:text-white"
               >
                 <option value="">All Status</option>
                 <option value="OPEN">Open</option>
@@ -306,12 +310,12 @@ export function TicketsPage() {
         </div>
 
         {/* Tickets Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-brand-card rounded-lg shadow-sm border border-gray-200 dark:border-0 p-6 animate-fade-in">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
             Recent Tickets
           </h2>
           {filteredTickets.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
+            <p className="text-gray-500 dark:text-white text-center py-8">
               {searchTerm || statusFilter
                 ? "No tickets found matching your criteria"
                 : "No tickets created yet"}
@@ -319,45 +323,45 @@ export function TicketsPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-500">
+                  <thead className="bg-gray-50 dark:bg-gray-600">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                         Ticket Info
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                         User
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                         Type
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                         Server ID
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                         Created
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-brand-card divide-y divide-gray-200 dark:divide-gray-500">
                     {filteredTickets.map((ticket) => (
                       <tr
                         key={ticket.id}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer transition-colors"
                         onClick={() => handleViewTicket(ticket)}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center">
                             <TicketIcon className="h-4 w-4 text-blue-500 mr-2" />
                             <div>
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 Ticket #{ticket.id.slice(0, 8)}
                               </div>
                               {ticket.description && (
-                                <div className="text-sm text-gray-500 max-w-xs truncate">
+                                <div className="text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate">
                                   {ticket.description}
                                 </div>
                               )}
@@ -366,12 +370,12 @@ export function TicketsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <User className="h-4 w-4 text-gray-400 mr-2" />
-                            <span className="text-sm text-gray-900">
+                            <User className="h-4 w-4 text-gray-400 dark:text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-900 dark:text-white">
                               {ticket.username}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-500 font-mono">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                             {ticket.userId}
                           </div>
                         </td>
@@ -398,16 +402,16 @@ export function TicketsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Hash className="h-4 w-4 text-gray-400 mr-2" />
-                            <span className="text-sm text-gray-500 font-mono">
+                            <Hash className="h-4 w-4 text-gray-400 dark:text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
                               {ticket.guildId}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                            <span className="text-sm text-gray-900">
+                            <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-900 dark:text-white">
                               {formatDate(ticket.createdAt)}
                             </span>
                           </div>
@@ -421,21 +425,21 @@ export function TicketsPage() {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-6 flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
                     Showing page {currentPage} of {totalPages}
                   </div>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Previous
                     </button>
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Next
                     </button>

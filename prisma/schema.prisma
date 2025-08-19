@@ -12,7 +12,7 @@ datasource db {
 
 model Match {
   id              String   @id // PandaScore ID
-  kcTeam          String   // KC team name (KC, KCB, KCBS, etc.)
+  kcTeam          String
   kcId            String   // KC team ID
   opponent        String   // Opponent team name
   opponentImage   String?  // Opponent team image URL
@@ -23,7 +23,7 @@ model Match {
   tournamentId    String?  // Tournament ID from PandaScore
   hasBracket      Boolean  @default(false)
   numberOfGames   Int      // Number of games in the match
-  beginAt         DateTime // Match date/time
+  beginAt         DateTime
   status          String   @default("not_started") // not_started, running, finished, announced, canceled
   score           String?  // Match score (e.g., "2-1", "3-0")
   createdAt       DateTime @default(now())
@@ -50,7 +50,7 @@ model GuildSettings {
   filteredTeams              String[] @default([]) // Array of team IDs to filter matches
   enablePreMatchNotifications Boolean @default(true) // Enable/disable 30-minute pre-match notifications
   enableScoreNotifications    Boolean @default(true) // Enable/disable score notifications
-  enableUpdateNotifications   Boolean @default(true) // Enable/disable bot update notifications
+  enableUpdateNotifications   Boolean @default(true)
   joinedAt                   DateTime @default(now())
   updatedAt                  DateTime? @updatedAt
 
@@ -67,7 +67,7 @@ model GuildSettings {
 model CommandStat {
   id        String   @id @default(cuid())
   guildId   String   // Discord Guild ID (can be null for global stats)
-  commandName String // Command name (nextmatch, standing, etc.)
+  commandName String
   userId    String   // Discord User ID
   username  String   // Discord username
   teamArg   String?  // Team argument used (for popularity stats)
@@ -112,20 +112,10 @@ model PerformanceMetric {
   @@map("performance_metrics")
 }
 
-model TeamPopularity {
-  id          String   @id @default(cuid())
-  teamId      String   // Team ID (KC, KCB, etc.)
-  teamName    String   // Team name
-  usageCount  Int      @default(0) // Number of uses
-  lastUsed    DateTime @default(now())
-
-  @@map("team_popularity")
-}
-
 model ChangeLog {
   id          String   @id @default(cuid())
   text        String   // Text of the change
-  status      String   // Status of the change (new, announced)
+  status      String
   createdAt   DateTime @default(now())
 
   @@map("change_logs")

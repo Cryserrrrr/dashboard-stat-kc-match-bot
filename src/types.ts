@@ -26,6 +26,7 @@ export interface GuildSettings {
   filteredTeams: string[];
   enablePreMatchNotifications: boolean;
   enableScoreNotifications: boolean;
+  enableUpdateNotifications: boolean;
   joinedAt: string;
   updatedAt: string;
 }
@@ -63,14 +64,6 @@ export interface PerformanceMetric {
   executedAt: string;
 }
 
-export interface TeamPopularity {
-  id: string;
-  teamId: string;
-  teamName: string;
-  usageCount: number;
-  lastUsed: string;
-}
-
 export interface DashboardStats {
   totalServers: number;
   totalMatches: number;
@@ -80,6 +73,7 @@ export interface DashboardStats {
   configStats: {
     preMatchNotificationsEnabled: number;
     scoreNotificationsEnabled: number;
+    updateNotificationsEnabled: number;
     serversWithFilteredTeams: number;
   };
   recentMatches: Match[];
@@ -89,7 +83,7 @@ export interface DashboardStats {
     averageResponseTime: number;
     successRate: number;
   };
-  teamPopularity: TeamPopularity[];
+
   performanceMetrics: {
     averageResponseTime: number;
     successRate: number;
@@ -98,6 +92,7 @@ export interface DashboardStats {
   tickets: {
     total: number;
     open: number;
+    inProgress: number;
     resolved: number;
   };
 }

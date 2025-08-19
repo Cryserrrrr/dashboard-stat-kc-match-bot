@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Light mode colors */
+  --brand-50: #f8f9fa;
+  --brand-100: #e9ecef;
+  --brand-200: #dee2e6;
+  --brand-300: #ced4da;
+  --brand-400: #adb5bd;
+  --brand-500: #6c757d;
+  --brand-600: #495057;
+  --brand-700: #343a40;
+  --brand-800: #212529;
+  --brand-900: #000000;
+
+  /* Couleurs principales */
+  --brand-light: #344e41;
+  --brand-dark: #1a1a1a;
+  --brand-card: #2d2d2d;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
@@ -9,11 +28,18 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
+}
+
+/* Smooth transitions for dark mode */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Discord Markdown Styles */
@@ -134,4 +160,56 @@ code {
   padding: 2px 4px;
   border-radius: 3px;
   font-size: 0.875em;
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--brand-dark);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--brand-light);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3a5a40;
+}
+
+/* Light mode scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a5a40;
+}
+
+/* Focus styles for better accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #588157;
+  outline-offset: 2px;
+}
+
+.dark button:focus-visible,
+.dark input:focus-visible,
+.dark select:focus-visible,
+.dark textarea:focus-visible {
+  outline-color: #a3b18a;
 }

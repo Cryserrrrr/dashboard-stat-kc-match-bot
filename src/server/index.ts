@@ -145,6 +145,10 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
       where: { enableScoreNotifications: true },
     });
 
+    const updateNotificationsEnabled = await prisma.guildSettings.count({
+      where: { enableUpdateNotifications: true },
+    });
+
     const serversWithFilteredTeams = await prisma.guildSettings.count({
       where: {
         filteredTeams: { isEmpty: false },
@@ -176,17 +180,16 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
     const successRate =
       totalCommands > 0 ? (successfulCommands / totalCommands) * 100 : 0;
 
-    const teamPopularity = await prisma.teamPopularity.findMany({
-      orderBy: { usageCount: "desc" },
-      take: 10,
-    });
-
     const ticketStats = await prisma.ticket.aggregate({
       _count: { id: true },
     });
 
     const openTickets = await prisma.ticket.count({
       where: { status: "OPEN" },
+    });
+
+    const inProgressTickets = await prisma.ticket.count({
+      where: { status: "IN_PROGRESS" },
     });
 
     const resolvedTickets = await prisma.ticket.count({
@@ -208,6 +211,7 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
       configStats: {
         preMatchNotificationsEnabled,
         scoreNotificationsEnabled,
+        updateNotificationsEnabled,
         serversWithFilteredTeams,
       },
       recentMatches,
@@ -217,7 +221,7 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
         averageResponseTime: performanceMetrics._avg.responseTime || 0,
         successRate: Math.round(successRate * 100) / 100,
       },
-      teamPopularity,
+
       performanceMetrics: {
         averageResponseTime:
           Math.round((performanceMetrics._avg.responseTime || 0) * 100) / 100,
@@ -227,6 +231,7 @@ app.get("/api/stats", requireAuth, async (_req, res) => {
       tickets: {
         total: ticketStats._count.id,
         open: openTickets,
+        inProgress: inProgressTickets,
         resolved: resolvedTickets,
       },
     });
@@ -239,6 +244,18 @@ app.get("/api/servers", requireAuth, async (_req, res) => {
   try {
     const servers = await prisma.guildSettings.findMany({
       orderBy: { joinedAt: "desc" },
+      select: {
+        guildId: true,
+        name: true,
+        memberCount: true,
+        channelId: true,
+        pingRoles: true,
+        filteredTeams: true,
+        enablePreMatchNotifications: true,
+        enableScoreNotifications: true,
+        enableUpdateNotifications: true,
+        joinedAt: true,
+      },
     });
     return res.json(servers);
   } catch (error) {
@@ -335,17 +352,6 @@ app.get("/api/tickets", requireAuth, async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: "Failed to fetch tickets" });
-  }
-});
-
-app.get("/api/team-popularity", requireAuth, async (_req, res) => {
-  try {
-    const teamPopularity = await prisma.teamPopularity.findMany({
-      orderBy: { usageCount: "desc" },
-    });
-    return res.json(teamPopularity);
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to fetch team popularity" });
   }
 });
 

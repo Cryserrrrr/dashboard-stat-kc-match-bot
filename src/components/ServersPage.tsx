@@ -30,18 +30,20 @@ export function ServersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-brand-dark">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-light"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600">{error}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-brand-dark">
+        <div className="text-center animate-fade-in">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Error
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300">{error}</p>
         </div>
       </div>
     );
@@ -56,68 +58,71 @@ export function ServersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-brand-dark transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="mb-8 animate-slide-down">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Server Management
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
             Manage your Discord server configurations
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-brand-card rounded-lg shadow-sm border border-gray-200 dark:border-0 p-6 mb-8 animate-fade-in">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
             Server Configurations
           </h2>
           {servers.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
+            <p className="text-gray-500 dark:text-white text-center py-8">
               No servers configured
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-500">
+                <thead className="bg-gray-50 dark:bg-gray-600">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                       Server Info
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                       Channel
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                       Notifications
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                       Filtered Teams
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                       Ping Roles
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                       Joined
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-brand-card divide-y divide-gray-200 dark:divide-gray-500">
                   {servers.map((server) => (
-                    <tr key={server.guildId} className="hover:bg-gray-50">
+                    <tr
+                      key={server.guildId}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <Users className="h-5 w-5 text-blue-600" />
+                            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                              <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                             </div>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {server.name || "Unknown Server"}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-gray-300">
                               {server.memberCount.toLocaleString()} members
                             </div>
-                            <div className="text-xs text-gray-400 font-mono">
+                            <div className="text-xs text-gray-400 dark:text-gray-400 font-mono">
                               {server.guildId}
                             </div>
                           </div>
@@ -125,8 +130,8 @@ export function ServersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Hash className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-900 font-mono">
+                          <Hash className="h-4 w-4 text-gray-400 dark:text-gray-400 mr-2" />
+                          <span className="text-sm text-gray-900 dark:text-white font-mono">
                             {server.channelId}
                           </span>
                         </div>
@@ -175,12 +180,33 @@ export function ServersPage() {
                                 : "Disabled"}
                             </span>
                           </div>
+                          <div className="flex items-center">
+                            <Bell
+                              className={`h-4 w-4 mr-2 ${
+                                server.enableUpdateNotifications
+                                  ? "text-green-500"
+                                  : "text-red-500"
+                              }`}
+                            />
+                            <span
+                              className={`text-sm ${
+                                server.enableUpdateNotifications
+                                  ? "text-green-700"
+                                  : "text-red-700"
+                              }`}
+                            >
+                              Updates{" "}
+                              {server.enableUpdateNotifications
+                                ? "Enabled"
+                                : "Disabled"}
+                            </span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Target className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-900">
+                          <Target className="h-4 w-4 text-gray-400 dark:text-gray-400 mr-2" />
+                          <span className="text-sm text-gray-900 dark:text-white">
                             {server.filteredTeams.length} teams
                           </span>
                         </div>
@@ -192,13 +218,13 @@ export function ServersPage() {
                                 .map((teamId) => (
                                   <span
                                     key={teamId}
-                                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
+                                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                                   >
                                     {getTeamName(teamId)}
                                   </span>
                                 ))}
                               {server.filteredTeams.length > 2 && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                                   +{server.filteredTeams.length - 2} more
                                 </span>
                               )}
@@ -207,7 +233,7 @@ export function ServersPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-white">
                           {server.pingRoles.length} roles
                         </div>
                         {server.pingRoles.length > 0 && (
@@ -216,13 +242,13 @@ export function ServersPage() {
                               {server.pingRoles.slice(0, 2).map((roleId) => (
                                 <span
                                   key={roleId}
-                                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
                                 >
                                   {roleId.slice(0, 8)}...
                                 </span>
                               ))}
                               {server.pingRoles.length > 2 && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-600">
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
                                   +{server.pingRoles.length - 2} more
                                 </span>
                               )}
@@ -232,8 +258,8 @@ export function ServersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-900">
+                          <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-400 mr-2" />
+                          <span className="text-sm text-gray-900 dark:text-white">
                             {formatDate(server.joinedAt)}
                           </span>
                         </div>

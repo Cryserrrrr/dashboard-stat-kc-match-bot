@@ -1,5 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { Dashboard } from "./components/Dashboard";
 import { Navigation } from "./components/Navigation";
 import { ServersPage } from "./components/ServersPage";
@@ -12,61 +16,48 @@ import { AuthCallback } from "./components/AuthCallback";
 import { ErrorPage } from "./components/ErrorPage";
 import { InviteRedirect } from "./components/InviteRedirect";
 import { AuthProvider } from "./contexts/AuthContext";
+import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/error" element={<ErrorPage />} />
-          <Route path="/invite" element={<InviteRedirect />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </AuthProvider>
+      <DarkModeProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/error" element={<ErrorPage />} />
+            <Route path="/invite" element={<InviteRedirect />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppContent />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AuthProvider>
+      </DarkModeProvider>
     </Router>
   );
 }
 
 function AppContent() {
-  const [activeSection, setActiveSection] = useState("overview");
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case "overview":
-        return <Dashboard />;
-      case "servers":
-        return <ServersPage />;
-      case "matches":
-        return <MatchesPage />;
-      case "commands":
-        return <CommandsPage />;
-      case "tickets":
-        return <TicketsPage />;
-      case "users":
-        return <UsersPage />;
-      case "changelog":
-        return <ChangelogPage />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
   return (
     <div className="App">
-      <Navigation
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-      />
-      {renderContent()}
+      <Navigation />
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/servers" element={<ServersPage />} />
+        <Route path="/matches" element={<MatchesPage />} />
+        <Route path="/commands" element={<CommandsPage />} />
+        <Route path="/tickets" element={<TicketsPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/changelog" element={<ChangelogPage />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </div>
   );
 }

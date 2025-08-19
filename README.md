@@ -10,7 +10,6 @@ A comprehensive dashboard for monitoring and managing your Discord bot's perform
 - **Match Tracking**: Comprehensive match database with filtering
 - **Command Analytics**: Track all bot command executions and usage patterns
 - **Support Tickets**: User support request management
-- **Team Popularity**: Most used teams and usage statistics
 
 ## 🛠️ Tech Stack
 
@@ -96,7 +95,6 @@ Access the dashboard at `http://localhost:3000`
 - **CommandStat**: Command execution tracking
 - **Ticket**: Support ticket management
 - **PerformanceMetric**: Bot performance data
-- **TeamPopularity**: Team usage analytics
 
 ## 🔌 API Endpoints
 
@@ -105,7 +103,6 @@ Access the dashboard at `http://localhost:3000`
 - `GET /api/matches` - Match data
 - `GET /api/command-stats` - Command analytics
 - `GET /api/tickets` - Support tickets
-- `GET /api/team-popularity` - Team usage
 
 ## 🐳 Deployment
 

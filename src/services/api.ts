@@ -4,7 +4,6 @@ import {
   MatchesResponse,
   CommandStatsResponse,
   TicketsResponse,
-  TeamPopularity,
   Ticket,
 } from "../types";
 
@@ -81,14 +80,6 @@ export const api = {
     const response = await fetch(`${API_BASE}/tickets?${params}`);
     if (!response.ok) {
       throw new Error("Failed to fetch tickets");
-    }
-    return response.json();
-  },
-
-  async getTeamPopularity(): Promise<TeamPopularity[]> {
-    const response = await fetch(`${API_BASE}/team-popularity`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch team popularity");
     }
     return response.json();
   },

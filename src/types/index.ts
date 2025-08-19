@@ -24,6 +24,7 @@ export interface GuildSettings {
   filteredTeams: string[];
   enablePreMatchNotifications: boolean;
   enableScoreNotifications: boolean;
+  enableUpdateNotifications: boolean;
 }
 
 export interface DashboardStats {
@@ -39,6 +40,7 @@ export interface DashboardStats {
   configStats: {
     preMatchNotificationsEnabled: number;
     scoreNotificationsEnabled: number;
+    updateNotificationsEnabled: number;
     serversWithFilteredTeams: number;
     totalFilteredTeams: number;
   };
@@ -49,6 +51,24 @@ export interface DashboardStats {
       kcTeam: number;
     };
   }>;
+  tickets: {
+    total: number;
+    open: number;
+    inProgress: number;
+    resolved: number;
+  };
+
+  commandStats: {
+    totalCommands: number;
+    mostUsedCommand: string;
+    averageResponseTime: number;
+    successRate: number;
+  };
+  performanceMetrics: {
+    averageResponseTime: number;
+    successRate: number;
+    totalErrors: number;
+  };
 }
 
 export interface MatchesResponse {
